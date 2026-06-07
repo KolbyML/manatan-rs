@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "packageId": "com.example.novel",
+  "name": "Example Novel Source",
+  "version": "1.0.0",
+  "versionCode": 1,
+  "minimumManatanVersion": "0.1.0",
+  "author": "Manatan",
+  "description": "A focused novel-only Manatan extension example.",
+  "contentTypes": ["novel"],
+  "permissions": {
+    "network": ["https://example.com"],
+    "cookies": false,
+    "webview": false,
+    "storage": false
+  },
+  "sources": [
+    {
+      "id": "example-novel",
+      "name": "Example Novel",
+      "lang": "en",
+      "baseUrl": "https://example.com/novel",
+      "contentTypes": ["novel"],
+      "contentRating": "safe",
+      "capabilities": {
+        "search": true,
+        "latest": true,
+        "filters": false,
+        "preferences": false,
+        "home": false,
+        "hosterResolution": false
+      },
+      "listings": [
+        { "id": "popular", "name": "Popular", "contentTypes": ["novel"] },
+        { "id": "latest", "name": "Latest", "contentTypes": ["novel"] }
+      ],
+      "tags": ["example", "novel"]
+    }
+  ]
+}

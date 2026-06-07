@@ -1,0 +1,31 @@
+[package]
+name = "manatan-extension"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88.0"
+authors = ["Manatan contributors"]
+license = "MIT"
+repository = "https://github.com/Manatan/manatan-rs"
+readme = "README.md"
+keywords = ["manatan", "extension", "wasm", "manga", "video"]
+description = "Rust SDK and runtime contract for Manatan .manatan WASM extension packages."
+
+[workspace]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+zip = { version = "0.6", optional = true }
+wasmer = { version = "6.1.0", optional = true }
+
+[target.'cfg(target_os = "ios")'.dependencies]
+wasmer = { version = "6.1.0", default-features = false, features = ["wasmi"], optional = true }
+
+[dev-dependencies]
+wat = "1"
+
+[features]
+default = ["archive", "runner"]
+archive = ["dep:zip"]
+runner = ["archive", "dep:wasmer"]

@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "packageId": "com.example.video",
+  "name": "Example Video Source",
+  "version": "1.0.0",
+  "versionCode": 1,
+  "minimumManatanVersion": "0.1.0",
+  "author": "Manatan",
+  "description": "A focused video-only Manatan extension example.",
+  "contentTypes": ["video"],
+  "permissions": {
+    "network": ["https://example.com", "https://test-streams.mux.dev"],
+    "cookies": false,
+    "webview": false,
+    "storage": false
+  },
+  "sources": [
+    {
+      "id": "example-video",
+      "name": "Example Video",
+      "lang": "en",
+      "baseUrl": "https://example.com/video",
+      "contentTypes": ["video"],
+      "contentRating": "safe",
+      "capabilities": {
+        "search": true,
+        "latest": true,
+        "filters": false,
+        "preferences": false,
+        "home": false,
+        "hosterResolution": false
+      },
+      "listings": [
+        { "id": "popular", "name": "Popular", "contentTypes": ["video"] },
+        { "id": "latest", "name": "Latest", "contentTypes": ["video"] }
+      ],
+      "tags": ["example", "video"]
+    }
+  ]
+}

@@ -1,0 +1,420 @@
+use std::{
+    collections::HashMap,
+    panic::AssertUnwindSafe,
+    sync::{Arc, Mutex},
+};
+
+use serde::{Serialize, de::DeserializeOwned};
+use serde_json::Value;
+use thiserror::Error;
+#[cfg(target_os = "ios")]
+use wasmer::wasmi::Wasmi;
+use wasmer::{
+    AsStoreRef, Function, FunctionEnv, FunctionEnvMut, Imports, Instance, Memory, Module, Store,
+};
+
+use crate::{
+    abi::{IMPORT_MODULE, unpack_ptr_len},
+    archive::ExtensionArchive,
+};
+
+#[derive(Debug, Error)]
+pub enum RunnerError {
+    #[error("wasm module error: {0}")]
+    Module(String),
+    #[error("wasm instance error: {0}")]
+    Instance(String),
+    #[error("wasm memory is missing")]
+    MissingMemory,
+    #[error("wasm export {0:?} is missing")]
+    MissingExport(String),
+    #[error("wasm allocation failed")]
+    AllocationFailed,
+    #[error("wasm memory error: {0}")]
+    Memory(String),
+    #[error("wasm call error: {0}")]
+    Call(String),
+    #[error("extension error: {0}")]
+    Extension(String),
+    #[error("host call error: {0}")]
+    Host(String),
+    #[error("json error: {0}")]
+    Json(#[from] serde_json::Error),
+}
+
+pub trait HostCall: Send + Sync {
+    fn call(&self, operation: &str, payload: &[u8]) -> Result<Vec<u8>, RunnerError>;
+}
+
+#[derive(Default)]
+pub struct EmptyHost;
+
+impl HostCall for EmptyHost {
+    fn call(&self, operation: &str, _payload: &[u8]) -> Result<Vec<u8>, RunnerError> {
+        Err(RunnerError::Host(format!(
+            "unsupported host operation {operation:?}"
+        )))
+    }
+}
+
+#[derive(Clone)]
+struct RunnerEnv {
+    memory: Option<Memory>,
+    host: Arc<dyn HostCall>,
+    results: Arc<Mutex<HostResults>>,
+}
+
+#[derive(Default)]
+struct HostResults {
+    next_rid: i32,
+    items: HashMap<i32, Vec<u8>>,
+}
+
+impl RunnerEnv {
+    fn new(host: Arc<dyn HostCall>) -> Self {
+        Self {
+            memory: None,
+            host,
+            results: Arc::new(Mutex::new(HostResults {
+                next_rid: 1,
+                items: HashMap::new(),
+            })),
+        }
+    }
+
+    fn read_bytes(
+        &self,
+        store: impl AsStoreRef,
+        ptr: u32,
+        len: u32,
+    ) -> Result<Vec<u8>, RunnerError> {
+        let memory = self.memory.as_ref().ok_or(RunnerError::MissingMemory)?;
+        let view = memory.view(&store);
+        let offset = ptr as u64;
+        let mut bytes = vec![0_u8; len as usize];
+        view.read(offset, &mut bytes)
+            .map_err(|error| RunnerError::Memory(error.to_string()))?;
+        Ok(bytes)
+    }
+
+    fn write_bytes(
+        &self,
+        store: impl AsStoreRef,
+        ptr: u32,
+        bytes: &[u8],
+    ) -> Result<(), RunnerError> {
+        let memory = self.memory.as_ref().ok_or(RunnerError::MissingMemory)?;
+        let view = memory.view(&store);
+        view.write(ptr as u64, bytes)
+            .map_err(|error| RunnerError::Memory(error.to_string()))
+    }
+}
+
+pub struct ExtensionRunner {
+    archive: ExtensionArchive,
+    host: Arc<dyn HostCall>,
+}
+
+impl ExtensionRunner {
+    pub fn new(archive: ExtensionArchive) -> Self {
+        Self::with_host(archive, Arc::new(EmptyHost))
+    }
+
+    pub fn with_host(archive: ExtensionArchive, host: Arc<dyn HostCall>) -> Self {
+        Self { archive, host }
+    }
+
+    pub fn call_json<I, O>(&self, export_name: &str, input: &I) -> Result<O, RunnerError>
+    where
+        I: Serialize,
+        O: DeserializeOwned,
+    {
+        let request = serde_json::to_vec(input)?;
+        let response = self.call_bytes(export_name, &request)?;
+        let result = serde_json::from_slice::<Result<O, crate::abi::ExtensionError>>(&response)?;
+        result.map_err(|error| RunnerError::Extension(error.message))
+    }
+
+    pub fn call_value(&self, export_name: &str, input: Value) -> Result<Value, RunnerError> {
+        self.call_json(export_name, &input)
+    }
+
+    fn call_bytes(&self, export_name: &str, request: &[u8]) -> Result<Vec<u8>, RunnerError> {
+        let mut store = new_store();
+        let module = Module::new(&store, &self.archive.module)
+            .map_err(|error| RunnerError::Module(error.to_string()))?;
+        let env = FunctionEnv::new(&mut store, RunnerEnv::new(Arc::clone(&self.host)));
+        let imports = build_imports(&mut store, &env);
+        let instance = instantiate_module(&mut store, &module, &imports)?;
+        let memory = instance
+            .exports
+            .get_memory("memory")
+            .map_err(|_| RunnerError::MissingMemory)?
+            .clone();
+        env.as_mut(&mut store).memory = Some(memory);
+        if let Ok(start) = instance
+            .exports
+            .get_typed_function::<(), ()>(&store, crate::exports::START)
+        {
+            start
+                .call(&mut store)
+                .map_err(|error| RunnerError::Call(error.to_string()))?;
+        }
+
+        let alloc = instance
+            .exports
+            .get_typed_function::<i32, i32>(&store, "manatan_alloc")
+            .map_err(|_| RunnerError::MissingExport("manatan_alloc".to_string()))?;
+        let dealloc = instance
+            .exports
+            .get_typed_function::<(i32, i32), ()>(&store, "manatan_dealloc")
+            .ok();
+        let call = instance
+            .exports
+            .get_typed_function::<(i32, i32), i64>(&store, export_name)
+            .map_err(|_| RunnerError::MissingExport(export_name.to_string()))?;
+
+        let request_ptr = alloc
+            .call(&mut store, request.len() as i32)
+            .map_err(|error| RunnerError::Call(error.to_string()))?;
+        if request_ptr <= 0 {
+            return Err(RunnerError::AllocationFailed);
+        }
+        env.as_ref(&store)
+            .write_bytes(&store, request_ptr as u32, request)?;
+
+        let packed = call
+            .call(&mut store, request_ptr, request.len() as i32)
+            .map_err(|error| RunnerError::Call(error.to_string()))?;
+        if let Some(dealloc) = &dealloc {
+            let _ = dealloc.call(&mut store, request_ptr, request.len() as i32);
+        }
+        let (response_ptr, response_len) = unpack_ptr_len(packed as u64);
+        if response_ptr == 0 || response_len == 0 {
+            return Err(RunnerError::Call(
+                "extension returned empty response".to_string(),
+            ));
+        }
+        let response = env
+            .as_ref(&store)
+            .read_bytes(&store, response_ptr, response_len)?;
+        if let Some(dealloc) = &dealloc {
+            let _ = dealloc.call(&mut store, response_ptr as i32, response_len as i32);
+        }
+        Ok(response)
+    }
+}
+
+fn new_store() -> Store {
+    #[cfg(target_os = "ios")]
+    {
+        return Store::new(Wasmi::new());
+    }
+
+    #[cfg(not(target_os = "ios"))]
+    {
+        Store::default()
+    }
+}
+
+fn build_imports(store: &mut Store, env: &FunctionEnv<RunnerEnv>) -> Imports {
+    let mut imports = Imports::new();
+    imports.define(
+        IMPORT_MODULE,
+        "manatan_host_call",
+        Function::new_typed_with_env(store, env, host_call),
+    );
+    imports.define(
+        IMPORT_MODULE,
+        "manatan_host_len",
+        Function::new_typed_with_env(store, env, host_len),
+    );
+    imports.define(
+        IMPORT_MODULE,
+        "manatan_host_read",
+        Function::new_typed_with_env(store, env, host_read),
+    );
+    imports.define(
+        IMPORT_MODULE,
+        "manatan_host_free",
+        Function::new_typed_with_env(store, env, host_free),
+    );
+    imports
+}
+
+fn instantiate_module(
+    store: &mut Store,
+    module: &Module,
+    imports: &Imports,
+) -> Result<Instance, RunnerError> {
+    std::panic::catch_unwind(AssertUnwindSafe(|| Instance::new(store, module, imports)))
+        .map_err(|panic| {
+            let message = if let Some(message) = panic.downcast_ref::<&str>() {
+                *message
+            } else if let Some(message) = panic.downcast_ref::<String>() {
+                message.as_str()
+            } else {
+                "unknown panic"
+            };
+            RunnerError::Instance(format!("panic: {message}"))
+        })?
+        .map_err(|error| RunnerError::Instance(error.to_string()))
+}
+
+fn host_call(
+    mut env: FunctionEnvMut<RunnerEnv>,
+    op_ptr: i32,
+    op_len: i32,
+    payload_ptr: i32,
+    payload_len: i32,
+) -> i32 {
+    if op_ptr < 0 || op_len < 0 || payload_ptr < 0 || payload_len < 0 {
+        return -1;
+    }
+    let operation = match env
+        .data()
+        .read_bytes(env.as_store_ref(), op_ptr as u32, op_len as u32)
+    {
+        Ok(bytes) => String::from_utf8_lossy(&bytes).to_string(),
+        Err(_) => return -2,
+    };
+    let payload =
+        match env
+            .data()
+            .read_bytes(env.as_store_ref(), payload_ptr as u32, payload_len as u32)
+        {
+            Ok(bytes) => bytes,
+            Err(_) => return -3,
+        };
+    let result = match env.data().host.call(&operation, &payload) {
+        Ok(result) => result,
+        Err(error) => {
+            let error = crate::abi::ExtensionError {
+                message: error.to_string(),
+            };
+            serde_json::to_vec(&Err::<Value, _>(error)).unwrap_or_default()
+        }
+    };
+    let mut results = match env.data_mut().results.lock() {
+        Ok(results) => results,
+        Err(_) => return -4,
+    };
+    let rid = results.next_rid;
+    results.next_rid = results.next_rid.saturating_add(1).max(1);
+    results.items.insert(rid, result);
+    rid
+}
+
+fn host_len(env: FunctionEnvMut<RunnerEnv>, rid: i32) -> i32 {
+    let Ok(results) = env.data().results.lock() else {
+        return -1;
+    };
+    results
+        .items
+        .get(&rid)
+        .map(|bytes| bytes.len() as i32)
+        .unwrap_or(-2)
+}
+
+fn host_read(env: FunctionEnvMut<RunnerEnv>, rid: i32, ptr: i32) -> i32 {
+    if ptr < 0 {
+        return -1;
+    }
+    let bytes = {
+        let Ok(results) = env.data().results.lock() else {
+            return -2;
+        };
+        let Some(bytes) = results.items.get(&rid) else {
+            return -3;
+        };
+        bytes.clone()
+    };
+    match env
+        .data()
+        .write_bytes(env.as_store_ref(), ptr as u32, &bytes)
+    {
+        Ok(()) => bytes.len() as i32,
+        Err(_) => -4,
+    }
+}
+
+fn host_free(env: FunctionEnvMut<RunnerEnv>, rid: i32) {
+    if let Ok(mut results) = env.data().results.lock() {
+        results.items.remove(&rid);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+    use crate::manifest::{CURRENT_SCHEMA_VERSION, ContentType, ExtensionManifest, SourceManifest};
+
+    #[test]
+    fn calls_json_export() {
+        let module = wat::parse_str(
+            r#"
+            (module
+              (memory (export "memory") 1)
+              (global $heap (mut i32) (i32.const 4096))
+              (func (export "manatan_alloc") (param $len i32) (result i32)
+                (local $ptr i32)
+                (local.set $ptr (global.get $heap))
+                (global.set $heap (i32.add (global.get $heap) (local.get $len)))
+                (local.get $ptr))
+              (func (export "manatan_dealloc") (param i32) (param i32))
+              (data (i32.const 1024) "{\"Ok\":{\"entries\":[],\"hasNextPage\":false}}")
+              (func (export "manatan_manga_search") (param i32) (param i32) (result i64)
+                (i64.or
+                  (i64.extend_i32_u (i32.const 1024))
+                  (i64.shl
+                    (i64.extend_i32_u (i32.const 41))
+                    (i64.const 32)))))
+            "#,
+        )
+        .expect("wat");
+        let archive = ExtensionArchive {
+            manifest: manifest(),
+            module,
+            filters: None,
+            preferences: None,
+        };
+        let runner = ExtensionRunner::new(archive);
+        let value = runner
+            .call_value(crate::exports::MANGA_SEARCH, json!({"query":"test"}))
+            .expect("call");
+        assert_eq!(value["hasNextPage"], false);
+        assert_eq!(value["entries"].as_array().map(Vec::len), Some(0));
+    }
+
+    fn manifest() -> ExtensionManifest {
+        ExtensionManifest {
+            schema_version: CURRENT_SCHEMA_VERSION,
+            package_id: "com.example.runner".to_string(),
+            name: "Runner Test".to_string(),
+            version: "1.0.0".to_string(),
+            version_code: 1,
+            minimum_manatan_version: None,
+            author: None,
+            description: None,
+            homepage: None,
+            repository: None,
+            license: None,
+            icon: None,
+            content_types: vec![ContentType::Manga],
+            permissions: Default::default(),
+            sources: vec![SourceManifest {
+                id: "runner".to_string(),
+                name: "Runner".to_string(),
+                lang: "en".to_string(),
+                base_url: None,
+                content_types: vec![ContentType::Manga],
+                content_rating: Default::default(),
+                capabilities: Default::default(),
+                listings: Vec::new(),
+                tags: Vec::new(),
+            }],
+        }
+    }
+}
