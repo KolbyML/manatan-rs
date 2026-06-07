@@ -117,6 +117,10 @@ pub struct MangaChapter {
     #[serde(default)]
     pub is_locked: bool,
     #[serde(default)]
+    pub page_count: Option<u32>,
+    #[serde(default)]
+    pub summary: Option<String>,
+    #[serde(default)]
     pub extra: JsonMap,
 }
 
@@ -149,6 +153,9 @@ pub enum PageContent {
     ArchiveEntry {
         archive_url: String,
         entry_path: String,
+    },
+    Request {
+        request: ImageRequest,
     },
     Lazy {
         key: String,
@@ -183,6 +190,20 @@ pub struct VideoEpisode {
     pub url: Option<String>,
     #[serde(default)]
     pub duration_seconds: Option<f64>,
+    #[serde(default)]
+    pub release_group: Option<String>,
+    #[serde(default)]
+    pub variant: Option<String>,
+    #[serde(default)]
+    pub language: Option<String>,
+    #[serde(default)]
+    pub size_bytes: Option<u64>,
+    #[serde(default)]
+    pub is_filler: bool,
+    #[serde(default)]
+    pub is_locked: bool,
+    #[serde(default)]
+    pub labels: Vec<String>,
     #[serde(default)]
     pub source_order: Option<i32>,
     #[serde(default)]
@@ -243,6 +264,77 @@ pub struct VideoStream {
     pub ffmpeg_video_args: Vec<String>,
     #[serde(default)]
     pub internal_data: Option<String>,
+    #[serde(default)]
+    pub stream_kind: Option<VideoStreamKind>,
+    #[serde(default)]
+    pub torrent: Option<TorrentInfo>,
+    #[serde(default)]
+    pub debrid: Option<DebridInfo>,
+    #[serde(default)]
+    pub segment_processing: Option<SegmentProcessing>,
+    #[serde(default)]
+    pub extra: JsonMap,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum VideoStreamKind {
+    Direct,
+    Hls,
+    Dash,
+    Torrent,
+    Magnet,
+    Debrid,
+    External,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TorrentInfo {
+    #[serde(default)]
+    pub magnet_url: Option<String>,
+    #[serde(default)]
+    pub torrent_url: Option<String>,
+    #[serde(default)]
+    pub file_index: Option<u32>,
+    #[serde(default)]
+    pub file_name: Option<String>,
+    #[serde(default)]
+    pub trackers: Vec<String>,
+    #[serde(default)]
+    pub seeders: Option<u32>,
+    #[serde(default)]
+    pub leechers: Option<u32>,
+    #[serde(default)]
+    pub size_bytes: Option<u64>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DebridInfo {
+    #[serde(default)]
+    pub provider: Option<String>,
+    #[serde(default)]
+    pub requires_account: bool,
+    #[serde(default)]
+    pub external_playback: bool,
+    #[serde(default)]
+    pub expires_at: Option<i64>,
+    #[serde(default)]
+    pub extra: JsonMap,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SegmentProcessing {
+    #[serde(default)]
+    pub proxy_playlist: bool,
+    #[serde(default)]
+    pub rewrite_segments: bool,
+    #[serde(default)]
+    pub strip_fake_image_header: bool,
+    #[serde(default)]
+    pub segment_headers: Context,
     #[serde(default)]
     pub extra: JsonMap,
 }
@@ -333,6 +425,20 @@ pub struct NovelChapter {
     #[serde(default)]
     pub source_order: Option<i32>,
     #[serde(default)]
+    pub section: Option<String>,
+    #[serde(default)]
+    pub page: Option<u32>,
+    #[serde(default)]
+    pub release_group: Option<String>,
+    #[serde(default)]
+    pub word_count: Option<u32>,
+    #[serde(default)]
+    pub summary: Option<String>,
+    #[serde(default)]
+    pub is_locked: bool,
+    #[serde(default)]
+    pub thumbnail: Option<String>,
+    #[serde(default)]
     pub extra: JsonMap,
 }
 
@@ -348,11 +454,41 @@ pub struct NovelText {
     #[serde(default)]
     pub css: Option<String>,
     #[serde(default)]
+    pub javascript: Option<String>,
+    #[serde(default)]
+    pub uses_web_storage: bool,
+    #[serde(default)]
     pub image_headers: Context,
+    #[serde(default)]
+    pub image_request: Option<ImageRequest>,
+    #[serde(default)]
+    pub image_requests: Vec<ImageRequest>,
     #[serde(default)]
     pub next_chapter_key: Option<String>,
     #[serde(default)]
     pub previous_chapter_key: Option<String>,
+    #[serde(default)]
+    pub extra: JsonMap,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImageRequest {
+    pub url: String,
+    #[serde(default)]
+    pub method: Option<String>,
+    #[serde(default)]
+    pub headers: Context,
+    #[serde(default)]
+    pub body_base64: Option<String>,
+    #[serde(default)]
+    pub credentials: Option<String>,
+    #[serde(default)]
+    pub referrer: Option<String>,
+    #[serde(default)]
+    pub referrer_policy: Option<String>,
+    #[serde(default)]
+    pub requires_proxy: bool,
     #[serde(default)]
     pub extra: JsonMap,
 }
@@ -435,6 +571,37 @@ pub struct HomeRequest {
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct UrlResolveRequest {
+    pub url: String,
+    #[serde(default)]
+    pub source_id: Option<String>,
+    #[serde(default)]
+    pub preferences: JsonMap,
+    #[serde(default)]
+    pub context: JsonMap,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UrlResolveResult {
+    #[serde(default)]
+    pub item: Option<CatalogItem>,
+    #[serde(default)]
+    pub chapter: Option<serde_json::Value>,
+    #[serde(default)]
+    pub episode: Option<serde_json::Value>,
+    #[serde(default)]
+    pub page: Option<serde_json::Value>,
+    #[serde(default)]
+    pub search: Option<SearchRequest>,
+    #[serde(default)]
+    pub url: Option<String>,
+    #[serde(default)]
+    pub extra: JsonMap,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct HomeSection<T = CatalogItem> {
     pub id: String,
     pub title: String,
@@ -509,6 +676,8 @@ pub struct MangaPageImageRequest<
 pub struct MangaPageImage {
     pub url: String,
     #[serde(default)]
+    pub request: Option<ImageRequest>,
+    #[serde(default)]
     pub page_url: Option<String>,
     #[serde(default)]
     pub mime_type: Option<String>,
@@ -580,6 +749,19 @@ pub struct MangaMigrationRequest<T = serde_json::Value> {
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct VideoEpisodeUrlRequest<T = serde_json::Value, E = serde_json::Value> {
+    pub item: T,
+    pub episode: E,
+    #[serde(default)]
+    pub source_id: Option<String>,
+    #[serde(default)]
+    pub preferences: JsonMap,
+    #[serde(default)]
+    pub context: JsonMap,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct VideoStreamRequest<T = serde_json::Value, E = serde_json::Value> {
     pub item: T,
     pub episode: E,
@@ -594,6 +776,45 @@ pub struct VideoStreamRequest<T = serde_json::Value, E = serde_json::Value> {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NovelTextRequest<T = serde_json::Value, C = serde_json::Value> {
+    pub item: T,
+    pub chapter: C,
+    #[serde(default)]
+    pub source_id: Option<String>,
+    #[serde(default)]
+    pub preferences: JsonMap,
+    #[serde(default)]
+    pub context: JsonMap,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NovelChapterRequest<T = serde_json::Value> {
+    pub item: T,
+    #[serde(default)]
+    pub page: Option<u32>,
+    #[serde(default)]
+    pub source_id: Option<String>,
+    #[serde(default)]
+    pub preferences: JsonMap,
+    #[serde(default)]
+    pub context: JsonMap,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NovelChapterPage {
+    pub entries: Vec<NovelChapter>,
+    #[serde(default)]
+    pub has_next_page: bool,
+    #[serde(default)]
+    pub section: Option<String>,
+    #[serde(default)]
+    pub next_page: Option<u32>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NovelChapterUrlRequest<T = serde_json::Value, C = serde_json::Value> {
     pub item: T,
     pub chapter: C,
     #[serde(default)]
@@ -859,4 +1080,91 @@ pub enum PreferenceDefinition {
         #[serde(default)]
         collapsed: bool,
     },
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::abi::{WebViewRequest, WebViewScript, WebViewWait};
+    use crate::manifest::{
+        ContentRating, ContentType, SourceCapabilities, SourceManifest, UrlPattern, UrlPatternKind,
+    };
+
+    #[test]
+    fn serializes_endgame_extension_fields() {
+        let source = SourceManifest {
+            id: "example".to_string(),
+            name: "Example".to_string(),
+            lang: "en".to_string(),
+            base_url: Some("https://example.test".to_string()),
+            content_type: ContentType::Video,
+            content_rating: ContentRating::Safe,
+            capabilities: SourceCapabilities {
+                search: true,
+                latest: true,
+                filters: true,
+                preferences: true,
+                home: true,
+                hoster_resolution: true,
+                url_resolution: true,
+            },
+            listings: Vec::new(),
+            url_patterns: vec![UrlPattern {
+                pattern: "https://example.test/watch/*".to_string(),
+                kind: Some(UrlPatternKind::Episode),
+            }],
+            tags: Vec::new(),
+        };
+        let source_value = serde_json::to_value(source).unwrap();
+        assert_eq!(source_value["urlPatterns"][0]["kind"], "episode");
+        assert_eq!(source_value["capabilities"]["urlResolution"], true);
+
+        let webview = WebViewRequest {
+            url: "https://example.test".to_string(),
+            wait_for: Some(WebViewWait::Selector {
+                selector: "#app".to_string(),
+            }),
+            scripts: vec![WebViewScript {
+                id: Some("signature".to_string()),
+                script: "window.signature".to_string(),
+                run_at: None,
+            }],
+            return_html: true,
+            ..Default::default()
+        };
+        let webview_value = serde_json::to_value(webview).unwrap();
+        assert_eq!(webview_value["waitFor"]["type"], "selector");
+        assert_eq!(webview_value["scripts"][0]["id"], "signature");
+        assert_eq!(webview_value["returnHtml"], true);
+
+        let video = VideoEpisode {
+            key: "episode-1".to_string(),
+            release_group: Some("Group".to_string()),
+            variant: Some("sub".to_string()),
+            labels: vec!["1080p".to_string()],
+            is_filler: true,
+            ..Default::default()
+        };
+        let video_value = serde_json::to_value(video).unwrap();
+        assert_eq!(video_value["releaseGroup"], "Group");
+        assert_eq!(video_value["isFiller"], true);
+
+        let novel_text = NovelText {
+            html: Some("<p>Hello</p>".to_string()),
+            javascript: Some("reader()".to_string()),
+            uses_web_storage: true,
+            image_request: Some(ImageRequest {
+                url: "https://example.test/image.jpg".to_string(),
+                method: Some("GET".to_string()),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let novel_value = serde_json::to_value(novel_text).unwrap();
+        assert_eq!(novel_value["usesWebStorage"], true);
+        assert_eq!(
+            novel_value["imageRequest"]["url"],
+            "https://example.test/image.jpg"
+        );
+    }
 }

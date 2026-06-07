@@ -423,6 +423,7 @@ mod tests {
                 content_rating: Default::default(),
                 capabilities: Default::default(),
                 listings: Vec::new(),
+                url_patterns: Vec::new(),
                 tags: Vec::new(),
             }],
         }

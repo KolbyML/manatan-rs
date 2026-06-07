@@ -3,7 +3,8 @@
 use crate::abi::ExtensionResult;
 use crate::{
     AlternateCover, CatalogItem, HomeSection, MangaChapter, MangaPage, MangaPageImage,
-    NovelChapter, NovelText, Paged, ProcessedImage, VideoEpisode, VideoHoster, VideoStream,
+    NovelChapter, NovelChapterPage, NovelText, Paged, ProcessedImage, UrlResolveResult,
+    VideoEpisode, VideoHoster, VideoStream,
 };
 use serde_json::Value;
 
@@ -68,6 +69,10 @@ pub trait MangaSource {
             .and_then(|chapter| chapter.get("url").or_else(|| chapter.get("key")))
             .and_then(Value::as_str)
             .map(ToString::to_string))
+    }
+
+    fn handle_url(&self, _request: Value) -> ExtensionResult<Option<UrlResolveResult>> {
+        Ok(None)
     }
 
     fn prepare_chapter(&self, request: Value) -> ExtensionResult<MangaChapter> {
@@ -150,6 +155,30 @@ pub trait VideoSource {
     fn resolve_hoster(&self, _request: Value) -> ExtensionResult<Vec<VideoStream>> {
         Ok(Vec::new())
     }
+
+    fn home(&self, _request: Value) -> ExtensionResult<Vec<HomeSection<CatalogItem>>> {
+        Ok(Vec::new())
+    }
+
+    fn item_url(&self, request: Value) -> ExtensionResult<Option<String>> {
+        Ok(request
+            .get("item")
+            .and_then(|item| item.get("url").or_else(|| item.get("key")))
+            .and_then(Value::as_str)
+            .map(ToString::to_string))
+    }
+
+    fn episode_url(&self, request: Value) -> ExtensionResult<Option<String>> {
+        Ok(request
+            .get("episode")
+            .and_then(|episode| episode.get("url").or_else(|| episode.get("key")))
+            .and_then(Value::as_str)
+            .map(ToString::to_string))
+    }
+
+    fn handle_url(&self, _request: Value) -> ExtensionResult<Option<UrlResolveResult>> {
+        Ok(None)
+    }
 }
 
 /// A Manatan novel source.
@@ -159,6 +188,39 @@ pub trait NovelSource {
     fn details(&self, request: Value) -> ExtensionResult<CatalogItem>;
     fn chapters(&self, request: Value) -> ExtensionResult<Vec<NovelChapter>>;
     fn text(&self, request: Value) -> ExtensionResult<NovelText>;
+
+    fn home(&self, _request: Value) -> ExtensionResult<Vec<HomeSection<CatalogItem>>> {
+        Ok(Vec::new())
+    }
+
+    fn chapters_page(&self, request: Value) -> ExtensionResult<NovelChapterPage> {
+        let entries = self.chapters(request)?;
+        Ok(NovelChapterPage {
+            entries,
+            has_next_page: false,
+            ..Default::default()
+        })
+    }
+
+    fn novel_url(&self, request: Value) -> ExtensionResult<Option<String>> {
+        Ok(request
+            .get("item")
+            .and_then(|item| item.get("url").or_else(|| item.get("key")))
+            .and_then(Value::as_str)
+            .map(ToString::to_string))
+    }
+
+    fn chapter_url(&self, request: Value) -> ExtensionResult<Option<String>> {
+        Ok(request
+            .get("chapter")
+            .and_then(|chapter| chapter.get("url").or_else(|| chapter.get("key")))
+            .and_then(Value::as_str)
+            .map(ToString::to_string))
+    }
+
+    fn handle_url(&self, _request: Value) -> ExtensionResult<Option<UrlResolveResult>> {
+        Ok(None)
+    }
 }
 
 #[macro_export]
@@ -212,6 +274,12 @@ macro_rules! export_manga_source {
             $crate::source::MangaSource::chapter_url(&$source, request)
         }
 
+        fn __manatan_manga_handle_url(
+            request: serde_json::Value,
+        ) -> $crate::abi::ExtensionResult<Option<$crate::UrlResolveResult>> {
+            $crate::source::MangaSource::handle_url(&$source, request)
+        }
+
         fn __manatan_manga_prepare_chapter(
             request: serde_json::Value,
         ) -> $crate::abi::ExtensionResult<$crate::MangaChapter> {
@@ -259,6 +327,7 @@ macro_rules! export_manga_source {
             manatan_manga_get_chapter_url,
             __manatan_manga_get_chapter_url
         );
+        $crate::__manatan_export_json!(manatan_manga_handle_url, __manatan_manga_handle_url);
         $crate::__manatan_export_json!(
             manatan_manga_prepare_chapter,
             __manatan_manga_prepare_chapter
@@ -325,6 +394,30 @@ macro_rules! export_video_source {
             $crate::source::VideoSource::resolve_hoster(&$source, request)
         }
 
+        fn __manatan_video_get_home(
+            request: serde_json::Value,
+        ) -> $crate::abi::ExtensionResult<Vec<$crate::HomeSection<$crate::CatalogItem>>> {
+            $crate::source::VideoSource::home(&$source, request)
+        }
+
+        fn __manatan_video_get_item_url(
+            request: serde_json::Value,
+        ) -> $crate::abi::ExtensionResult<Option<String>> {
+            $crate::source::VideoSource::item_url(&$source, request)
+        }
+
+        fn __manatan_video_get_episode_url(
+            request: serde_json::Value,
+        ) -> $crate::abi::ExtensionResult<Option<String>> {
+            $crate::source::VideoSource::episode_url(&$source, request)
+        }
+
+        fn __manatan_video_handle_url(
+            request: serde_json::Value,
+        ) -> $crate::abi::ExtensionResult<Option<$crate::UrlResolveResult>> {
+            $crate::source::VideoSource::handle_url(&$source, request)
+        }
+
         $crate::__manatan_export_json!(manatan_video_get_list, __manatan_video_get_list);
         $crate::__manatan_export_json!(manatan_video_search, __manatan_video_search);
         $crate::__manatan_export_json!(manatan_video_get_details, __manatan_video_get_details);
@@ -335,6 +428,13 @@ macro_rules! export_video_source {
             manatan_video_resolve_hoster,
             __manatan_video_resolve_hoster
         );
+        $crate::__manatan_export_json!(manatan_video_get_home, __manatan_video_get_home);
+        $crate::__manatan_export_json!(manatan_video_get_item_url, __manatan_video_get_item_url);
+        $crate::__manatan_export_json!(
+            manatan_video_get_episode_url,
+            __manatan_video_get_episode_url
+        );
+        $crate::__manatan_export_json!(manatan_video_handle_url, __manatan_video_handle_url);
     };
 }
 
@@ -371,10 +471,51 @@ macro_rules! export_novel_source {
             $crate::source::NovelSource::text(&$source, request)
         }
 
+        fn __manatan_novel_get_home(
+            request: serde_json::Value,
+        ) -> $crate::abi::ExtensionResult<Vec<$crate::HomeSection<$crate::CatalogItem>>> {
+            $crate::source::NovelSource::home(&$source, request)
+        }
+
+        fn __manatan_novel_get_chapters_page(
+            request: serde_json::Value,
+        ) -> $crate::abi::ExtensionResult<$crate::NovelChapterPage> {
+            $crate::source::NovelSource::chapters_page(&$source, request)
+        }
+
+        fn __manatan_novel_get_novel_url(
+            request: serde_json::Value,
+        ) -> $crate::abi::ExtensionResult<Option<String>> {
+            $crate::source::NovelSource::novel_url(&$source, request)
+        }
+
+        fn __manatan_novel_get_chapter_url(
+            request: serde_json::Value,
+        ) -> $crate::abi::ExtensionResult<Option<String>> {
+            $crate::source::NovelSource::chapter_url(&$source, request)
+        }
+
+        fn __manatan_novel_handle_url(
+            request: serde_json::Value,
+        ) -> $crate::abi::ExtensionResult<Option<$crate::UrlResolveResult>> {
+            $crate::source::NovelSource::handle_url(&$source, request)
+        }
+
         $crate::__manatan_export_json!(manatan_novel_get_list, __manatan_novel_get_list);
         $crate::__manatan_export_json!(manatan_novel_search, __manatan_novel_search);
         $crate::__manatan_export_json!(manatan_novel_get_details, __manatan_novel_get_details);
         $crate::__manatan_export_json!(manatan_novel_get_chapters, __manatan_novel_get_chapters);
+        $crate::__manatan_export_json!(
+            manatan_novel_get_chapters_page,
+            __manatan_novel_get_chapters_page
+        );
         $crate::__manatan_export_json!(manatan_novel_get_text, __manatan_novel_get_text);
+        $crate::__manatan_export_json!(manatan_novel_get_home, __manatan_novel_get_home);
+        $crate::__manatan_export_json!(manatan_novel_get_novel_url, __manatan_novel_get_novel_url);
+        $crate::__manatan_export_json!(
+            manatan_novel_get_chapter_url,
+            __manatan_novel_get_chapter_url
+        );
+        $crate::__manatan_export_json!(manatan_novel_handle_url, __manatan_novel_handle_url);
     };
 }

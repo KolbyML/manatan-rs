@@ -95,16 +95,20 @@ pub struct CookieResponse {
 pub struct WebViewRequest {
     pub url: String,
     #[serde(default)]
-    pub wait_for: Option<String>,
+    pub wait_for: Option<WebViewWait>,
     #[serde(default)]
     pub user_agent: Option<String>,
     #[serde(default)]
     pub headers: Vec<(String, String)>,
     #[serde(default)]
     pub timeout_ms: Option<u64>,
+    #[serde(default)]
+    pub scripts: Vec<WebViewScript>,
+    #[serde(default)]
+    pub return_html: bool,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WebViewResponse {
     pub final_url: String,
@@ -112,6 +116,53 @@ pub struct WebViewResponse {
     pub html: Option<String>,
     #[serde(default)]
     pub cookies: Vec<CookieRecord>,
+    #[serde(default)]
+    pub script_results: Vec<WebViewScriptResult>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "camelCase")]
+pub enum WebViewWait {
+    Load,
+    Selector { selector: String },
+    UrlContains { value: String },
+    Script { script: String },
+    Delay { milliseconds: u64 },
+}
+
+impl Default for WebViewWait {
+    fn default() -> Self {
+        Self::Load
+    }
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WebViewScript {
+    #[serde(default)]
+    pub id: Option<String>,
+    pub script: String,
+    #[serde(default)]
+    pub run_at: Option<WebViewScriptRunAt>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum WebViewScriptRunAt {
+    DocumentStart,
+    DocumentEnd,
+    AfterWait,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WebViewScriptResult {
+    #[serde(default)]
+    pub id: Option<String>,
+    #[serde(default)]
+    pub value: Option<Value>,
+    #[serde(default)]
+    pub error: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

@@ -5,8 +5,8 @@
 //! challenge pages through the host webview when enabled.
 
 use crate::abi::{
-    ExtensionResult, HttpRequest, HttpResponse, WebViewRequest, cookies_get, cookies_set,
-    http_fetch, webview_open,
+    ExtensionResult, HttpRequest, HttpResponse, WebViewRequest, WebViewWait, cookies_get,
+    cookies_set, http_fetch, webview_open,
 };
 use std::collections::BTreeMap;
 
@@ -38,7 +38,7 @@ pub enum ChallengePolicy {
     #[default]
     Never,
     WebView {
-        wait_for: Option<String>,
+        wait_for: Option<WebViewWait>,
         timeout_ms: Option<u64>,
     },
 }
@@ -52,13 +52,19 @@ impl ChallengePolicy {
     }
 
     pub fn with_wait_for(self, wait_for: impl Into<String>) -> Self {
+        self.with_webview_wait(WebViewWait::Selector {
+            selector: wait_for.into(),
+        })
+    }
+
+    pub fn with_webview_wait(self, wait_for: WebViewWait) -> Self {
         match self {
             Self::Never => Self::WebView {
-                wait_for: Some(wait_for.into()),
+                wait_for: Some(wait_for),
                 timeout_ms: Some(45_000),
             },
             Self::WebView { timeout_ms, .. } => Self::WebView {
-                wait_for: Some(wait_for.into()),
+                wait_for: Some(wait_for),
                 timeout_ms,
             },
         }
@@ -346,6 +352,8 @@ impl<'a> RequestBuilder<'a> {
             user_agent: self.client.browser_user_agent(),
             headers: headers.into_iter().collect(),
             timeout_ms,
+            scripts: Vec::new(),
+            return_html: true,
         })?;
         if !webview.cookies.is_empty() {
             cookies_set(webview.cookies)?;

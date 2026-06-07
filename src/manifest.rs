@@ -85,6 +85,8 @@ pub struct SourceManifest {
     #[serde(default)]
     pub listings: Vec<ListingManifest>,
     #[serde(default)]
+    pub url_patterns: Vec<UrlPattern>,
+    #[serde(default)]
     pub tags: Vec<String>,
 }
 
@@ -103,6 +105,8 @@ pub struct SourceCapabilities {
     pub home: bool,
     #[serde(default)]
     pub hoster_resolution: bool,
+    #[serde(default)]
+    pub url_resolution: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -110,4 +114,23 @@ pub struct SourceCapabilities {
 pub struct ListingManifest {
     pub id: String,
     pub name: String,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UrlPattern {
+    pub pattern: String,
+    #[serde(default)]
+    pub kind: Option<UrlPatternKind>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum UrlPatternKind {
+    Item,
+    Chapter,
+    Episode,
+    Page,
+    Search,
+    Unknown,
 }
