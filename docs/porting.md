@@ -20,9 +20,26 @@ class or plugin file to one Rust source module.
 
 1. Create a Rust `cdylib` crate targeting `wasm32-unknown-unknown`.
 2. Copy the source metadata into `manifest.json`.
-3. Port HTTP requests and HTML/JSON parsing into Rust.
-4. Return Manatan `CatalogItem`, chapter, page, episode, stream, or novel values.
-5. Build `module.wasm`, zip it with `manifest.json`, and name the package `.manatan`.
+3. Move search/list filters into typed `filters.json` definitions.
+4. Move user settings into typed `preferences.json` definitions.
+5. Port HTTP requests and HTML/JSON parsing into Rust.
+6. Return Manatan `CatalogItem`, chapter, page, episode, stream, or novel values.
+7. Build `module.wasm`, zip it with `manifest.json`, and name the package `.manatan`.
+
+## Porting Surface
+
+Use SDK host helpers for behavior that source plugins often need:
+
+- HTTP requests: `http_fetch`
+- Login/session cookies: `cookies_get` and `cookies_set`
+- Per-source cache or auth storage: `storage_get`, `storage_set`,
+  `storage_delete`, and `storage_list`
+- Browser challenge or login pages: `webview_open`
+
+For video sources, preserve stream metadata when available: quality, format,
+resolution, bitrate, codecs, audio tracks, subtitles, intro/outro segments, DRM,
+and proxy/header requirements. For manga and novels, preserve image/page headers
+and reading metadata so Manatan can render protected media reliably.
 
 ## Build Example
 

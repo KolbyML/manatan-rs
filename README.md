@@ -12,6 +12,10 @@ The format is media-first:
 - `video`: shows, episodes, streams, subtitles, and hosters
 - `novel`: works, chapter lists, and readable text/html
 
+The contract includes typed filters, source preferences, host HTTP, per-source
+storage, cookies, webview challenge hooks, richer video stream metadata, manga
+page headers, and novel reading metadata.
+
 ## Examples
 
 - `examples/basic`: one source that implements manga, video, and novel exports

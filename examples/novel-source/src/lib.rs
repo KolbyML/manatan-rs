@@ -15,6 +15,7 @@ fn demo_novel(key: &str, title: &str) -> CatalogItem {
         description: Some("A small novel entry returned from a Manatan WASM source.".to_string()),
         tags: vec!["fantasy".to_string(), "demo".to_string()],
         status: ItemStatus::Ongoing,
+        ..Default::default()
     }
 }
 
@@ -65,6 +66,7 @@ fn novel_get_chapters(_request: Value) -> ExtensionResult<Vec<NovelChapter>> {
             volume_number: Some(1.0),
             date_uploaded: None,
             url: Some("https://example.com/novel/glass-library/1".to_string()),
+            ..Default::default()
         },
         NovelChapter {
             key: "chapter-2".to_string(),
@@ -73,6 +75,7 @@ fn novel_get_chapters(_request: Value) -> ExtensionResult<Vec<NovelChapter>> {
             volume_number: Some(1.0),
             date_uploaded: None,
             url: Some("https://example.com/novel/glass-library/2".to_string()),
+            ..Default::default()
         },
     ])
 }
@@ -83,6 +86,7 @@ fn novel_get_text(_request: Value) -> ExtensionResult<NovelText> {
             "<h1>A Borrowed Key</h1><p>The library woke before the city did.</p>".to_string(),
         ),
         text: Some("A Borrowed Key\n\nThe library woke before the city did.".to_string()),
+        ..Default::default()
     })
 }
 

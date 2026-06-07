@@ -10,8 +10,8 @@ Extension packages use the `.manatan` extension and are zip archives:
 ```text
 manifest.json
 module.wasm
-filters.json       optional
-preferences.json   optional
+filters.json       optional typed filter schema
+preferences.json   optional typed source settings
 assets/...         optional
 ```
 
@@ -99,6 +99,61 @@ manatan_novel_get_text
 
 The SDK should hide the ABI details behind traits, but the runtime keeps these
 names stable so packages remain portable across desktop, Android, and iOS.
+
+## Requests
+
+List, search, details, chapter/page, episode/stream, novel text, and hoster
+exports receive JSON request objects. The SDK exposes typed request structs:
+
+- `ListRequest`
+- `SearchRequest`
+- `ItemRequest`
+- `MangaChapterRequest`
+- `MangaPageRequest`
+- `VideoStreamRequest`
+- `NovelTextRequest`
+- `ResolveHosterRequest`
+
+Every request can include `sourceId`, `preferences`, and `context`. Search
+requests include typed `FilterValue` entries from the source filter schema.
+
+## Filters And Preferences
+
+`filters.json` is an array of `FilterDefinition` values. Supported filter types
+are `header`, `separator`, `text`, `checkBox`, `triState`, `select`,
+`multiSelect`, and `sort`.
+
+`preferences.json` is an array of `PreferenceDefinition` values. Supported
+preference types are `text`, `switch`, `select`, `multiSelect`, and `button`.
+Manatan persists current values per source and passes them back to exports in
+the request `preferences` object.
+
+## Host Calls
+
+Extensions can call Manatan host APIs through the SDK helpers:
+
+| Helper | Operation | Permission |
+| --- | --- | --- |
+| `http_fetch` | `http.fetch` | `permissions.network` |
+| `storage_get`, `storage_set`, `storage_delete`, `storage_list` | `storage.*` | `permissions.storage` |
+| `cookies_get`, `cookies_set` | `cookies.*` | `permissions.cookies` |
+| `webview_open` | `webview.open` | `permissions.webview` |
+
+Storage is per extension source. Cookie calls use Manatan's shared cookie jar.
+Webview calls are for challenge/login flows and may return a clear unsupported
+error on platforms where the native webview host is unavailable.
+
+## Media Metadata
+
+The common catalog model supports alternate titles, cover/banner images,
+authors, artists, tags, rating, language, content rating, update time, status,
+and an `extra` map for source-specific metadata.
+
+Manga pages can provide request headers. Video streams can provide quality,
+format, resolution, bitrate, codecs, duration, proxy flags, audio tracks,
+subtitles, intro/outro segments, DRM info, and extra metadata. Novel text can
+provide HTML or plain text, CSS, base URL, image headers, previous/next chapter
+keys, and extra metadata.
 
 ## Scope
 

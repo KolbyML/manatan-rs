@@ -16,6 +16,7 @@ fn demo_show(key: &str, title: &str) -> CatalogItem {
         description: Some("A small video entry returned from a Manatan WASM source.".to_string()),
         tags: vec!["adventure".to_string(), "demo".to_string()],
         status: ItemStatus::Ongoing,
+        ..Default::default()
     }
 }
 
@@ -67,6 +68,7 @@ fn video_get_episodes(_request: Value) -> ExtensionResult<Vec<VideoEpisode>> {
             date_uploaded: None,
             thumbnail: Some("https://placehold.co/640x360/png?text=Episode+1".to_string()),
             url: Some("https://example.com/video/night-market/1".to_string()),
+            ..Default::default()
         },
         VideoEpisode {
             key: "episode-2".to_string(),
@@ -76,6 +78,7 @@ fn video_get_episodes(_request: Value) -> ExtensionResult<Vec<VideoEpisode>> {
             date_uploaded: None,
             thumbnail: Some("https://placehold.co/640x360/png?text=Episode+2".to_string()),
             url: Some("https://example.com/video/night-market/2".to_string()),
+            ..Default::default()
         },
     ])
 }
@@ -93,7 +96,9 @@ fn video_get_streams(_request: Value) -> ExtensionResult<Vec<VideoStream>> {
             language: Some("en".to_string()),
             label: Some("English".to_string()),
             format: Some("vtt".to_string()),
+            ..Default::default()
         }],
+        ..Default::default()
     }])
 }
 

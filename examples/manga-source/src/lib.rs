@@ -15,6 +15,7 @@ fn demo_manga(key: &str, title: &str) -> CatalogItem {
         description: Some("A small manga entry returned from a Manatan WASM source.".to_string()),
         tags: vec!["action".to_string(), "demo".to_string()],
         status: ItemStatus::Ongoing,
+        ..Default::default()
     }
 }
 
@@ -68,6 +69,7 @@ fn manga_get_chapters(_request: Value) -> ExtensionResult<Vec<MangaChapter>> {
             language: Some("en".to_string()),
             thumbnail: None,
             url: Some("https://example.com/manga/iron-lantern/1".to_string()),
+            ..Default::default()
         },
         MangaChapter {
             key: "chapter-2".to_string(),
@@ -79,6 +81,7 @@ fn manga_get_chapters(_request: Value) -> ExtensionResult<Vec<MangaChapter>> {
             language: Some("en".to_string()),
             thumbnail: None,
             url: Some("https://example.com/manga/iron-lantern/2".to_string()),
+            ..Default::default()
         },
     ])
 }
@@ -92,6 +95,7 @@ fn manga_get_pages(_request: Value) -> ExtensionResult<Vec<MangaPage>> {
             },
             thumbnail: None,
             description: Some("Page 1".to_string()),
+            ..Default::default()
         },
         MangaPage {
             content: PageContent::Url {
@@ -100,6 +104,7 @@ fn manga_get_pages(_request: Value) -> ExtensionResult<Vec<MangaPage>> {
             },
             thumbnail: None,
             description: Some("Page 2".to_string()),
+            ..Default::default()
         },
     ])
 }
