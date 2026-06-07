@@ -23,6 +23,9 @@ page headers, and novel reading metadata.
 - `examples/video-source`: focused video catalog, episodes, streams, and subtitles
 - `examples/novel-source`: focused novel catalog, chapters, and text/html
 
+For the Rust-native author workflow, see
+[`docs/development.md`](docs/development.md).
+
 Build any example with:
 
 ```sh

@@ -391,7 +391,7 @@ mod tests {
     fn manifest() -> ExtensionManifest {
         ExtensionManifest {
             schema_version: CURRENT_SCHEMA_VERSION,
-            package_id: "com.example.runner".to_string(),
+            package_id: "example-runner".to_string(),
             name: "Runner Test".to_string(),
             version: "1.0.0".to_string(),
             version_code: 1,

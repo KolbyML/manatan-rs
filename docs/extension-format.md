@@ -32,7 +32,7 @@ The examples directory includes focused examples for each media kind:
 ```json
 {
   "schemaVersion": 1,
-  "packageId": "com.example.sources",
+  "packageId": "example-sources",
   "name": "Example Sources",
   "version": "1.0.0",
   "versionCode": 1,

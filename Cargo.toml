@@ -12,6 +12,11 @@ description = "Rust SDK and runtime contract for Manatan .manatan WASM extension
 
 [workspace]
 
+[[bin]]
+name = "manatan-dev"
+path = "src/bin/manatan-dev.rs"
+required-features = ["archive", "runner"]
+
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "packageId": "com.example.video",
+  "packageId": "example-video",
   "name": "Example Video Source",
   "version": "1.0.0",
   "versionCode": 1,

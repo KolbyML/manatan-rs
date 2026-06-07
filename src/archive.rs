@@ -133,7 +133,7 @@ mod tests {
     fn parses_valid_package() {
         let manifest = r#"{
             "schemaVersion": 1,
-            "packageId": "com.example.manga",
+            "packageId": "example-manga",
             "name": "Example",
             "version": "1.0.0",
             "versionCode": 1,
@@ -148,7 +148,7 @@ mod tests {
         }"#;
         let bytes = package_bytes(manifest, b"\0asm");
         let archive = parse_archive(&bytes).expect("valid package");
-        assert_eq!(archive.manifest.package_id, "com.example.manga");
+        assert_eq!(archive.manifest.package_id, "example-manga");
         assert_eq!(archive.module, b"\0asm");
     }
 
@@ -156,7 +156,7 @@ mod tests {
     fn rejects_source_content_type_mismatch() {
         let manifest = r#"{
             "schemaVersion": 1,
-            "packageId": "com.example.mismatch",
+            "packageId": "example-mismatch",
             "name": "Example",
             "version": "1.0.0",
             "versionCode": 1,
