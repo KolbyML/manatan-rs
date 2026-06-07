@@ -139,6 +139,16 @@ impl ExtensionRunner {
         self.call_json(export_name, &input)
     }
 
+    pub fn has_export(&self, export_name: &str) -> Result<bool, RunnerError> {
+        let mut store = new_store();
+        let module = Module::new(&store, &self.archive.module)
+            .map_err(|error| RunnerError::Module(error.to_string()))?;
+        let env = FunctionEnv::new(&mut store, RunnerEnv::new(Arc::clone(&self.host)));
+        let imports = build_imports(&mut store, &env);
+        let instance = instantiate_module(&mut store, &module, &imports)?;
+        Ok(instance.exports.get_function(export_name).is_ok())
+    }
+
     fn call_bytes(&self, export_name: &str, request: &[u8]) -> Result<Vec<u8>, RunnerError> {
         let mut store = new_store();
         let module = Module::new(&store, &self.archive.module)
@@ -352,7 +362,7 @@ mod tests {
     use crate::manifest::{CURRENT_SCHEMA_VERSION, ContentType, ExtensionManifest, SourceManifest};
 
     #[test]
-    fn calls_json_export() {
+    fn calls_wasm_export() {
         let module = wat::parse_str(
             r#"
             (module

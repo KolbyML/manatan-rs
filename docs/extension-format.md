@@ -83,6 +83,15 @@ manatan_manga_search
 manatan_manga_get_details
 manatan_manga_get_chapters
 manatan_manga_get_pages
+manatan_manga_get_home
+manatan_manga_get_manga_url
+manatan_manga_get_chapter_url
+manatan_manga_prepare_chapter
+manatan_manga_resolve_page_image
+manatan_manga_process_page_image
+manatan_manga_get_alternate_covers
+manatan_manga_get_related
+manatan_manga_migrate
 
 manatan_video_get_list
 manatan_video_search
@@ -112,6 +121,13 @@ exports receive JSON request objects. The SDK exposes typed request structs:
 - `ItemRequest`
 - `MangaChapterRequest`
 - `MangaPageRequest`
+- `HomeRequest`
+- `MangaChapterUrlRequest`
+- `MangaPrepareChapterRequest`
+- `MangaPageImageRequest`
+- `MangaPageImageProcessRequest`
+- `MangaRelatedRequest`
+- `MangaMigrationRequest`
 - `VideoStreamRequest`
 - `VideoHosterRequest`
 - `VideoHosterStreamsRequest`
@@ -125,12 +141,13 @@ requests include typed `FilterValue` entries from the source filter schema.
 
 `filters.json` is an array of `FilterDefinition` values. Supported filter types
 are `header`, `separator`, `text`, `checkBox`, `triState`, `select`,
-`multiSelect`, and `sort`.
+`multiSelect`, `range`, `sort`, and `group`.
 
 `preferences.json` is an array of `PreferenceDefinition` values. Supported
-preference types are `text`, `switch`, `select`, `multiSelect`, and `button`.
-Manatan persists current values per source and passes them back to exports in
-the request `preferences` object.
+preference types are `text`, `switch`, `select`, `multiSelect`, `button`,
+`stepper`, `segment`, `picker`, `editableList`, `login`, and `group`. Manatan
+persists current values per source and passes them back to exports in the request
+`preferences` object.
 
 ## Host Calls
 
@@ -151,15 +168,22 @@ flows, returning the final URL and synced cookies after navigation completes.
 
 The common catalog model supports alternate titles, cover/banner images,
 authors, artists, tags, rating, language, content rating, update time, status,
-and an `extra` map for source-specific metadata.
+initialization state, preferred manga viewer, update strategy, next update time,
+alternate covers, and an `extra` map for source-specific metadata.
 
-Manga pages can provide request headers. Video streams can provide quality,
-format, resolution, bitrate, codecs, duration, proxy flags, preferred/default
-state, initialization state, hoster metadata, audio tracks, subtitles,
-intro/outro segments, arbitrary timestamps, DRM info, player passthrough
-arguments (`mpvArgs`, `ffmpegStreamArgs`, `ffmpegVideoArgs`), internal source
-data, and extra metadata. Novel text can provide HTML or plain text, CSS, base
-URL, image headers, previous/next chapter keys, and extra metadata.
+Manga sources can expose home sections, item/chapter canonical URLs, chapter
+normalization, lazy page image resolution, optional page image post-processing,
+alternate covers, related titles, and migration candidates. Manga pages can be
+direct image URLs, text pages, embedded image bytes, archive entries, or lazy
+page references resolved through `manatan_manga_resolve_page_image`.
+
+Video streams can provide quality, format, resolution, bitrate, codecs,
+duration, proxy flags, preferred/default state, initialization state, hoster
+metadata, audio tracks, subtitles, intro/outro segments, arbitrary timestamps,
+DRM info, player passthrough arguments (`mpvArgs`, `ffmpegStreamArgs`,
+`ffmpegVideoArgs`), internal source data, and extra metadata. Novel text can
+provide HTML or plain text, CSS, base URL, image headers, previous/next chapter
+keys, and extra metadata.
 
 Video sources can either return all streams directly from
 `manatan_video_get_streams`, or expose a hoster-first flow:

@@ -27,7 +27,7 @@
         "latest": true,
         "filters": false,
         "preferences": false,
-        "home": false,
+        "home": true,
         "hosterResolution": false
       },
       "listings": [

@@ -243,6 +243,7 @@ pub unsafe extern "C" fn manatan_dealloc(ptr: *mut u8, len: usize) {
 
 #[cfg(target_arch = "wasm32")]
 pub fn host_call(operation: &str, payload: &[u8]) -> Result<Vec<u8>, ExtensionError> {
+    #[link(wasm_import_module = "manatan")]
     unsafe extern "C" {
         #[link_name = "manatan_host_call"]
         fn manatan_host_call(
@@ -288,35 +289,4 @@ pub fn host_call(operation: &str, payload: &[u8]) -> Result<Vec<u8>, ExtensionEr
         });
     }
     Ok(bytes)
-}
-
-#[macro_export]
-macro_rules! manatan_json_export {
-    ($export_name:ident, $handler:path) => {
-        #[unsafe(no_mangle)]
-        pub unsafe extern "C" fn $export_name(ptr: u32, len: u32) -> u64 {
-            let input = unsafe { core::slice::from_raw_parts(ptr as *const u8, len as usize) };
-            let result = (|| -> $crate::abi::ExtensionResult<Vec<u8>> {
-                let value =
-                    serde_json::from_slice(input).map_err(|error| $crate::abi::ExtensionError {
-                        message: format!("request decode error: {error}"),
-                    })?;
-                let output = $handler(value)?;
-                serde_json::to_vec(&Ok::<_, $crate::abi::ExtensionError>(output)).map_err(|error| {
-                    $crate::abi::ExtensionError {
-                        message: format!("response encode error: {error}"),
-                    }
-                })
-            })();
-            let bytes = match result {
-                Ok(bytes) => bytes,
-                Err(error) => serde_json::to_vec(&Err::<serde_json::Value, _>(error))
-                    .unwrap_or_else(|_| b"{\"Err\":{\"message\":\"fatal encode error\"}}".to_vec()),
-            };
-            let len = bytes.len() as u32;
-            let ptr = $crate::abi::manatan_alloc(bytes.len()) as *mut u8;
-            unsafe { core::ptr::copy_nonoverlapping(bytes.as_ptr(), ptr, bytes.len()) };
-            $crate::abi::pack_ptr_len(ptr as u32, len)
-        }
-    };
 }

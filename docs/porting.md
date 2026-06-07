@@ -12,6 +12,10 @@ class or plugin file to one Rust source module.
 | Item details | `manatan_manga_get_details`, `manatan_video_get_details`, `manatan_novel_get_details` |
 | Manga chapters | `manatan_manga_get_chapters` |
 | Manga pages | `manatan_manga_get_pages` |
+| Manga lazy image URL | `manatan_manga_resolve_page_image` |
+| Manga chapter cleanup | `manatan_manga_prepare_chapter` |
+| Manga home sections | `manatan_manga_get_home` |
+| Manga related/covers/migration | `manatan_manga_get_related`, `manatan_manga_get_alternate_covers`, `manatan_manga_migrate` |
 | Video episodes | `manatan_video_get_episodes` |
 | Video hosters | `manatan_video_get_hosters` |
 | Video streams | `manatan_video_get_streams`, `manatan_video_resolve_hoster` |
@@ -37,13 +41,21 @@ Use SDK host helpers for behavior that source plugins often need:
   `storage_delete`, and `storage_list`
 - Browser challenge or login pages: `webview_open`
 
+For manga sources, preserve viewer direction, update strategy, canonical item
+URLs, chapter URLs, scanlator/language data, page referers, image headers,
+alternate covers, and related title links. Use lazy `PageContent::Lazy` plus
+`manatan_manga_resolve_page_image` when the original source resolves image URLs
+from a per-page HTML document or requires a tokenized late request. Use
+`manatan_manga_prepare_chapter` when the source needs one final normalization
+step before a chapter is stored or rendered.
+
 For video sources, preserve stream metadata when available: quality, format,
 resolution, bitrate, codecs, audio tracks, subtitles, intro/outro segments,
 timestamps, DRM, player/FFmpeg passthrough arguments, preferred stream flags,
 internal source data, and proxy/header requirements. Use the hoster-first exports
 when the original source separates hoster extraction from stream resolution. For
-manga and novels, preserve image/page headers and reading metadata so Manatan can
-render protected media reliably.
+novels, preserve text base URLs, image headers, chapter navigation, and any CSS
+needed to render source content cleanly.
 
 ## Build Example
 

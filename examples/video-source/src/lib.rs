@@ -1,9 +1,23 @@
 use manatan_extension::{
     CatalogItem, ItemStatus, Paged, SubtitleTrack, VideoEpisode, VideoHoster, VideoStream,
-    abi::ExtensionResult, manatan_json_export,
+    abi::ExtensionResult, export_video_source, source::VideoSource,
 };
 use serde_json::Value;
 use std::collections::BTreeMap;
+
+const SOURCE: Source = Source;
+
+struct Source;
+
+impl VideoSource for Source {
+    fn list(&self, request: Value) -> ExtensionResult<Paged<CatalogItem>> { video_get_list(request) }
+    fn search(&self, request: Value) -> ExtensionResult<Paged<CatalogItem>> { video_search(request) }
+    fn details(&self, request: Value) -> ExtensionResult<CatalogItem> { video_get_details(request) }
+    fn episodes(&self, request: Value) -> ExtensionResult<Vec<VideoEpisode>> { video_get_episodes(request) }
+    fn streams(&self, request: Value) -> ExtensionResult<Vec<VideoStream>> { video_get_streams(request) }
+    fn hosters(&self, request: Value) -> ExtensionResult<Vec<VideoHoster>> { video_get_hosters(request) }
+    fn resolve_hoster(&self, request: Value) -> ExtensionResult<Vec<VideoStream>> { video_resolve_hoster(request) }
+}
 
 fn demo_show(key: &str, title: &str) -> CatalogItem {
     CatalogItem {
@@ -124,10 +138,4 @@ fn demo_hoster() -> VideoHoster {
     }
 }
 
-manatan_json_export!(manatan_video_get_list, video_get_list);
-manatan_json_export!(manatan_video_search, video_search);
-manatan_json_export!(manatan_video_get_details, video_get_details);
-manatan_json_export!(manatan_video_get_episodes, video_get_episodes);
-manatan_json_export!(manatan_video_get_hosters, video_get_hosters);
-manatan_json_export!(manatan_video_get_streams, video_get_streams);
-manatan_json_export!(manatan_video_resolve_hoster, video_resolve_hoster);
+export_video_source!(SOURCE);

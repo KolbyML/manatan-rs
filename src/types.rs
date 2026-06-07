@@ -27,6 +27,23 @@ impl Default for ItemStatus {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Viewer {
+    LeftToRight,
+    RightToLeft,
+    Vertical,
+    Webtoon,
+    ContinuousVertical,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum UpdateStrategy {
+    Always,
+    OnlyFetchOnce,
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CatalogItem {
@@ -51,6 +68,34 @@ pub struct CatalogItem {
     #[serde(default)]
     pub latest_update: Option<i64>,
     pub status: ItemStatus,
+    #[serde(default)]
+    pub initialized: bool,
+    #[serde(default)]
+    pub viewer: Option<Viewer>,
+    #[serde(default)]
+    pub update_strategy: Option<UpdateStrategy>,
+    #[serde(default)]
+    pub next_update_time: Option<i64>,
+    #[serde(default)]
+    pub alternate_covers: Vec<AlternateCover>,
+    #[serde(default)]
+    pub extra: JsonMap,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AlternateCover {
+    pub url: String,
+    #[serde(default)]
+    pub thumbnail: Option<String>,
+    #[serde(default)]
+    pub language: Option<String>,
+    #[serde(default)]
+    pub volume: Option<String>,
+    #[serde(default)]
+    pub description: Option<String>,
+    #[serde(default)]
+    pub headers: Context,
     #[serde(default)]
     pub extra: JsonMap,
 }
@@ -104,6 +149,15 @@ pub enum PageContent {
     ArchiveEntry {
         archive_url: String,
         entry_path: String,
+    },
+    Lazy {
+        key: String,
+        #[serde(default)]
+        url: Option<String>,
+        #[serde(default)]
+        page_url: Option<String>,
+        #[serde(default)]
+        context: Option<Context>,
     },
 }
 
@@ -370,6 +424,162 @@ pub struct MangaPageRequest<T = serde_json::Value, C = serde_json::Value> {
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct HomeRequest {
+    #[serde(default)]
+    pub source_id: Option<String>,
+    #[serde(default)]
+    pub preferences: JsonMap,
+    #[serde(default)]
+    pub context: JsonMap,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HomeSection<T = CatalogItem> {
+    pub id: String,
+    pub title: String,
+    #[serde(default)]
+    pub subtitle: Option<String>,
+    #[serde(default)]
+    pub listing: Option<String>,
+    #[serde(default)]
+    pub style: Option<HomeSectionStyle>,
+    pub entries: Vec<T>,
+    #[serde(default)]
+    pub has_more: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum HomeSectionStyle {
+    Compact,
+    Cover,
+    Banner,
+    Featured,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MangaChapterUrlRequest<T = serde_json::Value, C = serde_json::Value> {
+    pub manga: T,
+    pub chapter: C,
+    #[serde(default)]
+    pub source_id: Option<String>,
+    #[serde(default)]
+    pub preferences: JsonMap,
+    #[serde(default)]
+    pub context: JsonMap,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MangaPrepareChapterRequest<T = serde_json::Value, C = serde_json::Value> {
+    pub manga: T,
+    pub chapter: C,
+    #[serde(default)]
+    pub source_id: Option<String>,
+    #[serde(default)]
+    pub preferences: JsonMap,
+    #[serde(default)]
+    pub context: JsonMap,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MangaPageImageRequest<
+    T = serde_json::Value,
+    C = serde_json::Value,
+    P = serde_json::Value,
+> {
+    pub manga: T,
+    pub chapter: C,
+    pub page: P,
+    #[serde(default)]
+    pub page_index: Option<u32>,
+    #[serde(default)]
+    pub source_id: Option<String>,
+    #[serde(default)]
+    pub preferences: JsonMap,
+    #[serde(default)]
+    pub context: JsonMap,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MangaPageImage {
+    pub url: String,
+    #[serde(default)]
+    pub page_url: Option<String>,
+    #[serde(default)]
+    pub mime_type: Option<String>,
+    #[serde(default)]
+    pub headers: Context,
+    #[serde(default)]
+    pub context: Option<Context>,
+    #[serde(default)]
+    pub extra: JsonMap,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MangaPageImageProcessRequest<
+    T = serde_json::Value,
+    C = serde_json::Value,
+    P = serde_json::Value,
+> {
+    pub manga: T,
+    pub chapter: C,
+    pub page: P,
+    pub image_base64: String,
+    #[serde(default)]
+    pub mime_type: Option<String>,
+    #[serde(default)]
+    pub page_index: Option<u32>,
+    #[serde(default)]
+    pub source_id: Option<String>,
+    #[serde(default)]
+    pub preferences: JsonMap,
+    #[serde(default)]
+    pub context: JsonMap,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProcessedImage {
+    pub image_base64: String,
+    #[serde(default)]
+    pub mime_type: Option<String>,
+    #[serde(default)]
+    pub extra: JsonMap,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MangaRelatedRequest<T = serde_json::Value> {
+    pub manga: T,
+    #[serde(default)]
+    pub source_id: Option<String>,
+    #[serde(default)]
+    pub preferences: JsonMap,
+    #[serde(default)]
+    pub context: JsonMap,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MangaMigrationRequest<T = serde_json::Value> {
+    pub manga: T,
+    pub target_source_id: String,
+    #[serde(default)]
+    pub source_id: Option<String>,
+    #[serde(default)]
+    pub preferences: JsonMap,
+    #[serde(default)]
+    pub context: JsonMap,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct VideoStreamRequest<T = serde_json::Value, E = serde_json::Value> {
     pub item: T,
     pub episode: E,
@@ -482,12 +692,30 @@ pub enum FilterDefinition {
         #[serde(default)]
         default: Vec<String>,
     },
+    Range {
+        id: String,
+        title: String,
+        #[serde(default)]
+        min: Option<f64>,
+        #[serde(default)]
+        max: Option<f64>,
+        #[serde(default)]
+        step: Option<f64>,
+        #[serde(default)]
+        default: Option<RangeSelection>,
+    },
     Sort {
         id: String,
         title: String,
         options: Vec<SortOption>,
         #[serde(default)]
         default: Option<SortSelection>,
+    },
+    Group {
+        title: String,
+        filters: Vec<FilterDefinition>,
+        #[serde(default)]
+        collapsed: bool,
     },
 }
 
@@ -513,6 +741,15 @@ pub struct SortSelection {
     pub value: String,
     #[serde(default)]
     pub ascending: bool,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RangeSelection {
+    #[serde(default)]
+    pub from: Option<f64>,
+    #[serde(default)]
+    pub to: Option<f64>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -559,5 +796,67 @@ pub enum PreferenceDefinition {
         title: String,
         #[serde(default)]
         summary: Option<String>,
+    },
+    Stepper {
+        id: String,
+        title: String,
+        #[serde(default)]
+        summary: Option<String>,
+        #[serde(default)]
+        min: Option<f64>,
+        #[serde(default)]
+        max: Option<f64>,
+        #[serde(default)]
+        step: Option<f64>,
+        #[serde(default)]
+        default: Option<f64>,
+    },
+    Segment {
+        id: String,
+        title: String,
+        options: Vec<OptionItem>,
+        #[serde(default)]
+        summary: Option<String>,
+        #[serde(default)]
+        default: Option<String>,
+    },
+    Picker {
+        id: String,
+        title: String,
+        options: Vec<OptionItem>,
+        #[serde(default)]
+        summary: Option<String>,
+        #[serde(default)]
+        default: Option<String>,
+    },
+    EditableList {
+        id: String,
+        title: String,
+        #[serde(default)]
+        summary: Option<String>,
+        #[serde(default)]
+        default: Vec<String>,
+        #[serde(default)]
+        placeholder: Option<String>,
+    },
+    Login {
+        id: String,
+        title: String,
+        #[serde(default)]
+        summary: Option<String>,
+        #[serde(default)]
+        username_label: Option<String>,
+        #[serde(default)]
+        password_label: Option<String>,
+        #[serde(default)]
+        webview_url: Option<String>,
+    },
+    Group {
+        title: String,
+        preferences: Vec<PreferenceDefinition>,
+        #[serde(default)]
+        summary: Option<String>,
+        #[serde(default)]
+        collapsed: bool,
     },
 }

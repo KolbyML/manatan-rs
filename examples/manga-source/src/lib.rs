@@ -1,8 +1,25 @@
 use manatan_extension::{
-    CatalogItem, ItemStatus, MangaChapter, MangaPage, PageContent, Paged, abi::ExtensionResult,
-    manatan_json_export,
+    AlternateCover, CatalogItem, HomeSection, HomeSectionStyle, ItemStatus, MangaChapter,
+    MangaPage, MangaPageImage, PageContent, Paged, Viewer, abi::ExtensionResult,
+    export_manga_source, source::MangaSource,
 };
-use serde_json::Value;
+use serde_json::{Value, json};
+
+const SOURCE: Source = Source;
+
+struct Source;
+
+impl MangaSource for Source {
+    fn list(&self, request: Value) -> ExtensionResult<Paged<CatalogItem>> { manga_get_list(request) }
+    fn search(&self, request: Value) -> ExtensionResult<Paged<CatalogItem>> { manga_search(request) }
+    fn details(&self, request: Value) -> ExtensionResult<CatalogItem> { manga_get_details(request) }
+    fn chapters(&self, request: Value) -> ExtensionResult<Vec<MangaChapter>> { manga_get_chapters(request) }
+    fn pages(&self, request: Value) -> ExtensionResult<Vec<MangaPage>> { manga_get_pages(request) }
+    fn home(&self, request: Value) -> ExtensionResult<Vec<HomeSection<CatalogItem>>> { manga_get_home(request) }
+    fn resolve_page_image(&self, request: Value) -> ExtensionResult<MangaPageImage> { manga_resolve_page_image(request) }
+    fn alternate_covers(&self, request: Value) -> ExtensionResult<Vec<AlternateCover>> { manga_get_alternate_covers(request) }
+    fn related(&self, request: Value) -> ExtensionResult<Vec<CatalogItem>> { manga_get_related(request) }
+}
 
 fn demo_manga(key: &str, title: &str) -> CatalogItem {
     CatalogItem {
@@ -15,8 +32,32 @@ fn demo_manga(key: &str, title: &str) -> CatalogItem {
         description: Some("A small manga entry returned from a Manatan WASM source.".to_string()),
         tags: vec!["action".to_string(), "demo".to_string()],
         status: ItemStatus::Ongoing,
+        viewer: Some(Viewer::RightToLeft),
+        initialized: true,
         ..Default::default()
     }
+}
+
+fn manga_get_home(_request: Value) -> ExtensionResult<Vec<HomeSection<CatalogItem>>> {
+    Ok(vec![
+        HomeSection {
+            id: "featured".to_string(),
+            title: "Featured".to_string(),
+            style: Some(HomeSectionStyle::Featured),
+            entries: vec![demo_manga("iron-lantern", "Iron Lantern")],
+            has_more: false,
+            ..Default::default()
+        },
+        HomeSection {
+            id: "popular".to_string(),
+            title: "Popular".to_string(),
+            listing: Some("popular".to_string()),
+            style: Some(HomeSectionStyle::Cover),
+            entries: manga_page().entries,
+            has_more: false,
+            ..Default::default()
+        },
+    ])
 }
 
 fn manga_page() -> Paged<CatalogItem> {
@@ -98,8 +139,10 @@ fn manga_get_pages(_request: Value) -> ExtensionResult<Vec<MangaPage>> {
             ..Default::default()
         },
         MangaPage {
-            content: PageContent::Url {
-                url: "https://placehold.co/900x1300/png?text=Page+2".to_string(),
+            content: PageContent::Lazy {
+                key: "page-2".to_string(),
+                url: Some("https://example.com/manga/iron-lantern/1/page/2".to_string()),
+                page_url: Some("https://example.com/manga/iron-lantern/1".to_string()),
                 context: None,
             },
             thumbnail: None,
@@ -109,8 +152,38 @@ fn manga_get_pages(_request: Value) -> ExtensionResult<Vec<MangaPage>> {
     ])
 }
 
-manatan_json_export!(manatan_manga_get_list, manga_get_list);
-manatan_json_export!(manatan_manga_search, manga_search);
-manatan_json_export!(manatan_manga_get_details, manga_get_details);
-manatan_json_export!(manatan_manga_get_chapters, manga_get_chapters);
-manatan_json_export!(manatan_manga_get_pages, manga_get_pages);
+fn manga_resolve_page_image(request: Value) -> ExtensionResult<MangaPageImage> {
+    let page_key = request
+        .get("page")
+        .and_then(|page| page.get("content"))
+        .and_then(|content| content.get("lazy"))
+        .and_then(|lazy| lazy.get("key"))
+        .and_then(Value::as_str)
+        .unwrap_or("page-1");
+    Ok(MangaPageImage {
+        url: format!("https://placehold.co/900x1300/png?text={page_key}"),
+        page_url: Some("https://example.com/manga/iron-lantern/1".to_string()),
+        headers: [("referer".to_string(), "https://example.com".to_string())]
+            .into_iter()
+            .collect(),
+        extra: [("resolvedFrom".to_string(), json!("lazy"))]
+            .into_iter()
+            .collect(),
+        ..Default::default()
+    })
+}
+
+fn manga_get_alternate_covers(_request: Value) -> ExtensionResult<Vec<AlternateCover>> {
+    Ok(vec![AlternateCover {
+        url: "https://placehold.co/600x900/png?text=Alt+Cover".to_string(),
+        language: Some("en".to_string()),
+        volume: Some("1".to_string()),
+        ..Default::default()
+    }])
+}
+
+fn manga_get_related(_request: Value) -> ExtensionResult<Vec<CatalogItem>> {
+    Ok(vec![demo_manga("iron-lantern-side-story", "Iron Lantern: Side Story")])
+}
+
+export_manga_source!(SOURCE);

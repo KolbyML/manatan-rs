@@ -1,8 +1,20 @@
 use manatan_extension::{
     CatalogItem, ItemStatus, NovelChapter, NovelText, Paged, abi::ExtensionResult,
-    manatan_json_export,
+    export_novel_source, source::NovelSource,
 };
 use serde_json::Value;
+
+const SOURCE: Source = Source;
+
+struct Source;
+
+impl NovelSource for Source {
+    fn list(&self, request: Value) -> ExtensionResult<Paged<CatalogItem>> { novel_get_list(request) }
+    fn search(&self, request: Value) -> ExtensionResult<Paged<CatalogItem>> { novel_search(request) }
+    fn details(&self, request: Value) -> ExtensionResult<CatalogItem> { novel_get_details(request) }
+    fn chapters(&self, request: Value) -> ExtensionResult<Vec<NovelChapter>> { novel_get_chapters(request) }
+    fn text(&self, request: Value) -> ExtensionResult<NovelText> { novel_get_text(request) }
+}
 
 fn demo_novel(key: &str, title: &str) -> CatalogItem {
     CatalogItem {
@@ -90,8 +102,4 @@ fn novel_get_text(_request: Value) -> ExtensionResult<NovelText> {
     })
 }
 
-manatan_json_export!(manatan_novel_get_list, novel_get_list);
-manatan_json_export!(manatan_novel_search, novel_search);
-manatan_json_export!(manatan_novel_get_details, novel_get_details);
-manatan_json_export!(manatan_novel_get_chapters, novel_get_chapters);
-manatan_json_export!(manatan_novel_get_text, novel_get_text);
+export_novel_source!(SOURCE);
