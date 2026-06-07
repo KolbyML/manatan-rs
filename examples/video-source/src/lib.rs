@@ -1,6 +1,6 @@
 use manatan_extension::{
-    CatalogItem, ItemStatus, Paged, SubtitleTrack, VideoEpisode, VideoStream, abi::ExtensionResult,
-    manatan_json_export,
+    CatalogItem, ItemStatus, Paged, SubtitleTrack, VideoEpisode, VideoHoster, VideoStream,
+    abi::ExtensionResult, manatan_json_export,
 };
 use serde_json::Value;
 use std::collections::BTreeMap;
@@ -88,8 +88,11 @@ fn video_get_streams(_request: Value) -> ExtensionResult<Vec<VideoStream>> {
     headers.insert("Referer".to_string(), "https://example.com".to_string());
     Ok(vec![VideoStream {
         url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8".to_string(),
+        hoster: Some(demo_hoster()),
         quality: Some("auto".to_string()),
         format: Some("hls".to_string()),
+        is_hls: true,
+        preferred: true,
         headers,
         subtitles: vec![SubtitleTrack {
             url: "https://example.com/subtitles/night-market-en.vtt".to_string(),
@@ -102,8 +105,29 @@ fn video_get_streams(_request: Value) -> ExtensionResult<Vec<VideoStream>> {
     }])
 }
 
+fn video_get_hosters(_request: Value) -> ExtensionResult<Vec<VideoHoster>> {
+    Ok(vec![demo_hoster()])
+}
+
+fn video_resolve_hoster(request: Value) -> ExtensionResult<Vec<VideoStream>> {
+    video_get_streams(request)
+}
+
+fn demo_hoster() -> VideoHoster {
+    VideoHoster {
+        key: "demo-hls".to_string(),
+        name: "Demo HLS".to_string(),
+        url: Some("https://test-streams.mux.dev".to_string()),
+        lazy: true,
+        video_count: Some(1),
+        ..Default::default()
+    }
+}
+
 manatan_json_export!(manatan_video_get_list, video_get_list);
 manatan_json_export!(manatan_video_search, video_search);
 manatan_json_export!(manatan_video_get_details, video_get_details);
 manatan_json_export!(manatan_video_get_episodes, video_get_episodes);
+manatan_json_export!(manatan_video_get_hosters, video_get_hosters);
 manatan_json_export!(manatan_video_get_streams, video_get_streams);
+manatan_json_export!(manatan_video_resolve_hoster, video_resolve_hoster);

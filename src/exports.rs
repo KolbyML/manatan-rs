@@ -16,6 +16,7 @@ pub const VIDEO_GET_LIST: &str = "manatan_video_get_list";
 pub const VIDEO_SEARCH: &str = "manatan_video_search";
 pub const VIDEO_GET_DETAILS: &str = "manatan_video_get_details";
 pub const VIDEO_GET_EPISODES: &str = "manatan_video_get_episodes";
+pub const VIDEO_GET_HOSTERS: &str = "manatan_video_get_hosters";
 pub const VIDEO_GET_STREAMS: &str = "manatan_video_get_streams";
 pub const VIDEO_RESOLVE_HOSTER: &str = "manatan_video_resolve_hoster";
 

@@ -87,6 +87,7 @@ manatan_video_get_list
 manatan_video_search
 manatan_video_get_details
 manatan_video_get_episodes
+manatan_video_get_hosters
 manatan_video_get_streams
 manatan_video_resolve_hoster
 
@@ -111,6 +112,8 @@ exports receive JSON request objects. The SDK exposes typed request structs:
 - `MangaChapterRequest`
 - `MangaPageRequest`
 - `VideoStreamRequest`
+- `VideoHosterRequest`
+- `VideoHosterStreamsRequest`
 - `NovelTextRequest`
 - `ResolveHosterRequest`
 
@@ -140,8 +143,8 @@ Extensions can call Manatan host APIs through the SDK helpers:
 | `webview_open` | `webview.open` | `permissions.webview` |
 
 Storage is per extension source. Cookie calls use Manatan's shared cookie jar.
-Webview calls are for challenge/login flows and may return a clear unsupported
-error on platforms where the native webview host is unavailable.
+Webview calls use Manatan's platform webview bridge for challenge and login
+flows, returning the final URL and synced cookies after navigation completes.
 
 ## Media Metadata
 
@@ -150,10 +153,20 @@ authors, artists, tags, rating, language, content rating, update time, status,
 and an `extra` map for source-specific metadata.
 
 Manga pages can provide request headers. Video streams can provide quality,
-format, resolution, bitrate, codecs, duration, proxy flags, audio tracks,
-subtitles, intro/outro segments, DRM info, and extra metadata. Novel text can
-provide HTML or plain text, CSS, base URL, image headers, previous/next chapter
-keys, and extra metadata.
+format, resolution, bitrate, codecs, duration, proxy flags, preferred/default
+state, initialization state, hoster metadata, audio tracks, subtitles,
+intro/outro segments, arbitrary timestamps, DRM info, player passthrough
+arguments (`mpvArgs`, `ffmpegStreamArgs`, `ffmpegVideoArgs`), internal source
+data, and extra metadata. Novel text can provide HTML or plain text, CSS, base
+URL, image headers, previous/next chapter keys, and extra metadata.
+
+Video sources can either return all streams directly from
+`manatan_video_get_streams`, or expose a hoster-first flow:
+
+1. `manatan_video_get_hosters` returns `VideoHoster` entries for an episode.
+2. Manatan shows those hosters in the existing video flow.
+3. `manatan_video_resolve_hoster` receives the selected hoster and returns
+   `VideoStream` entries for playback.
 
 ## Scope
 

@@ -13,7 +13,8 @@ class or plugin file to one Rust source module.
 | Manga chapters | `manatan_manga_get_chapters` |
 | Manga pages | `manatan_manga_get_pages` |
 | Video episodes | `manatan_video_get_episodes` |
-| Video streams | `manatan_video_get_streams` |
+| Video hosters | `manatan_video_get_hosters` |
+| Video streams | `manatan_video_get_streams`, `manatan_video_resolve_hoster` |
 | Novel chapters/text | `manatan_novel_get_chapters`, `manatan_novel_get_text` |
 
 ## Practical Porting Steps
@@ -37,9 +38,12 @@ Use SDK host helpers for behavior that source plugins often need:
 - Browser challenge or login pages: `webview_open`
 
 For video sources, preserve stream metadata when available: quality, format,
-resolution, bitrate, codecs, audio tracks, subtitles, intro/outro segments, DRM,
-and proxy/header requirements. For manga and novels, preserve image/page headers
-and reading metadata so Manatan can render protected media reliably.
+resolution, bitrate, codecs, audio tracks, subtitles, intro/outro segments,
+timestamps, DRM, player/FFmpeg passthrough arguments, preferred stream flags,
+internal source data, and proxy/header requirements. Use the hoster-first exports
+when the original source separates hoster extraction from stream resolution. For
+manga and novels, preserve image/page headers and reading metadata so Manatan can
+render protected media reliably.
 
 ## Build Example
 

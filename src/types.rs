@@ -141,6 +141,8 @@ pub struct VideoStream {
     pub url: String,
     #[serde(default)]
     pub name: Option<String>,
+    #[serde(default)]
+    pub hoster: Option<VideoHoster>,
     pub quality: Option<String>,
     pub format: Option<String>,
     #[serde(default)]
@@ -163,6 +165,10 @@ pub struct VideoStream {
     pub is_backup: bool,
     #[serde(default)]
     pub requires_proxy: bool,
+    #[serde(default)]
+    pub preferred: bool,
+    #[serde(default)]
+    pub initialized: bool,
     pub headers: Context,
     #[serde(default)]
     pub audio_tracks: Vec<AudioTrack>,
@@ -173,6 +179,33 @@ pub struct VideoStream {
     pub outro: Option<MediaSegment>,
     #[serde(default)]
     pub drm: Option<DrmInfo>,
+    #[serde(default)]
+    pub timestamps: Vec<MediaTimestamp>,
+    #[serde(default)]
+    pub mpv_args: Vec<String>,
+    #[serde(default)]
+    pub ffmpeg_stream_args: Vec<String>,
+    #[serde(default)]
+    pub ffmpeg_video_args: Vec<String>,
+    #[serde(default)]
+    pub internal_data: Option<String>,
+    #[serde(default)]
+    pub extra: JsonMap,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VideoHoster {
+    pub key: String,
+    pub name: String,
+    #[serde(default)]
+    pub url: Option<String>,
+    #[serde(default)]
+    pub lazy: bool,
+    #[serde(default)]
+    pub video_count: Option<u32>,
+    #[serde(default)]
+    pub headers: Context,
     #[serde(default)]
     pub extra: JsonMap,
 }
@@ -210,6 +243,15 @@ pub struct AudioTrack {
 pub struct MediaSegment {
     pub start_seconds: f64,
     pub end_seconds: f64,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaTimestamp {
+    pub time_seconds: f64,
+    pub label: String,
+    #[serde(default)]
+    pub kind: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -358,6 +400,33 @@ pub struct ResolveHosterRequest {
     pub url: String,
     #[serde(default)]
     pub headers: Context,
+    #[serde(default)]
+    pub source_id: Option<String>,
+    #[serde(default)]
+    pub preferences: JsonMap,
+    #[serde(default)]
+    pub context: JsonMap,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VideoHosterRequest<T = serde_json::Value, E = serde_json::Value> {
+    pub item: T,
+    pub episode: E,
+    #[serde(default)]
+    pub source_id: Option<String>,
+    #[serde(default)]
+    pub preferences: JsonMap,
+    #[serde(default)]
+    pub context: JsonMap,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VideoHosterStreamsRequest<T = serde_json::Value, E = serde_json::Value> {
+    pub item: T,
+    pub episode: E,
+    pub hoster: VideoHoster,
     #[serde(default)]
     pub source_id: Option<String>,
     #[serde(default)]
