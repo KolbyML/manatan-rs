@@ -7,7 +7,7 @@
   "minimumManatanVersion": "0.1.0",
   "author": "Manatan",
   "description": "A focused manga-only Manatan extension example.",
-  "contentTypes": ["manga"],
+  "contentType": "manga",
   "permissions": {
     "network": ["https://example.com", "https://placehold.co"],
     "cookies": false,
@@ -20,7 +20,7 @@
       "name": "Example Manga",
       "lang": "en",
       "baseUrl": "https://example.com/manga",
-      "contentTypes": ["manga"],
+      "contentType": "manga",
       "contentRating": "safe",
       "capabilities": {
         "search": true,
@@ -31,8 +31,8 @@
         "hosterResolution": false
       },
       "listings": [
-        { "id": "popular", "name": "Popular", "contentTypes": ["manga"] },
-        { "id": "latest", "name": "Latest", "contentTypes": ["manga"] }
+        { "id": "popular", "name": "Popular" },
+        { "id": "latest", "name": "Latest" }
       ],
       "tags": ["example", "manga"]
     }

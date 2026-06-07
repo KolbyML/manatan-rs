@@ -7,7 +7,7 @@
   "minimumManatanVersion": "0.1.0",
   "author": "Manatan",
   "description": "A focused video-only Manatan extension example.",
-  "contentTypes": ["video"],
+  "contentType": "video",
   "permissions": {
     "network": ["https://example.com", "https://test-streams.mux.dev"],
     "cookies": false,
@@ -20,7 +20,7 @@
       "name": "Example Video",
       "lang": "en",
       "baseUrl": "https://example.com/video",
-      "contentTypes": ["video"],
+      "contentType": "video",
       "contentRating": "safe",
       "capabilities": {
         "search": true,
@@ -31,8 +31,8 @@
         "hosterResolution": false
       },
       "listings": [
-        { "id": "popular", "name": "Popular", "contentTypes": ["video"] },
-        { "id": "latest", "name": "Latest", "contentTypes": ["video"] }
+        { "id": "popular", "name": "Popular" },
+        { "id": "latest", "name": "Latest" }
       ],
       "tags": ["example", "video"]
     }

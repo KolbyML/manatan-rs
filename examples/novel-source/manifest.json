@@ -7,7 +7,7 @@
   "minimumManatanVersion": "0.1.0",
   "author": "Manatan",
   "description": "A focused novel-only Manatan extension example.",
-  "contentTypes": ["novel"],
+  "contentType": "novel",
   "permissions": {
     "network": ["https://example.com"],
     "cookies": false,
@@ -20,7 +20,7 @@
       "name": "Example Novel",
       "lang": "en",
       "baseUrl": "https://example.com/novel",
-      "contentTypes": ["novel"],
+      "contentType": "novel",
       "contentRating": "safe",
       "capabilities": {
         "search": true,
@@ -31,8 +31,8 @@
         "hosterResolution": false
       },
       "listings": [
-        { "id": "popular", "name": "Popular", "contentTypes": ["novel"] },
-        { "id": "latest", "name": "Latest", "contentTypes": ["novel"] }
+        { "id": "popular", "name": "Popular" },
+        { "id": "latest", "name": "Latest" }
       ],
       "tags": ["example", "novel"]
     }

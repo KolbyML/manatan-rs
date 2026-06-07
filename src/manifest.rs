@@ -49,8 +49,7 @@ pub struct ExtensionManifest {
     pub license: Option<String>,
     #[serde(default)]
     pub icon: Option<String>,
-    #[serde(default)]
-    pub content_types: Vec<ContentType>,
+    pub content_type: ContentType,
     #[serde(default)]
     pub permissions: Permissions,
     #[serde(default)]
@@ -78,8 +77,7 @@ pub struct SourceManifest {
     pub lang: String,
     #[serde(default)]
     pub base_url: Option<String>,
-    #[serde(default)]
-    pub content_types: Vec<ContentType>,
+    pub content_type: ContentType,
     #[serde(default)]
     pub content_rating: ContentRating,
     #[serde(default)]
@@ -112,6 +110,4 @@ pub struct SourceCapabilities {
 pub struct ListingManifest {
     pub id: String,
     pub name: String,
-    #[serde(default)]
-    pub content_types: Vec<ContentType>,
 }

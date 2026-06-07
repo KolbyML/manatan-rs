@@ -6,7 +6,8 @@ This crate is the runtime-facing contract for `.manatan` extension packages. It 
 designed to be shared with the public `manatan-rs` SDK so extension authors and
 Manatan use the same manifest schema, content model, and WASM export names.
 
-The format is media-first:
+The format is media-first. Each `.manatan` package declares exactly one media
+kind:
 
 - `manga`: catalogs, chapter lists, and image/text pages
 - `video`: shows, episodes, streams, subtitles, and hosters
@@ -18,7 +19,6 @@ page headers, and novel reading metadata.
 
 ## Examples
 
-- `examples/basic`: one source that implements manga, video, and novel exports
 - `examples/manga-source`: focused manga catalog, chapters, and pages
 - `examples/video-source`: focused video catalog, episodes, streams, and subtitles
 - `examples/novel-source`: focused novel catalog, chapters, and text/html

@@ -15,13 +15,14 @@ preferences.json   optional typed source settings
 assets/...         optional
 ```
 
-`manifest.json` declares package metadata, permissions, sources, and supported
-media kinds. `module.wasm` exports the source functions Manatan calls.
+`manifest.json` declares package metadata, permissions, sources, and the package
+media kind. `module.wasm` exports the source functions Manatan calls.
 
-The examples directory includes both an all-in-one source and focused examples
-for each media kind:
+Each package supports exactly one media kind: `manga`, `video`, or `novel`.
+Create separate packages when a site needs sources for multiple media kinds.
 
-- `examples/basic`
+The examples directory includes focused examples for each media kind:
+
 - `examples/manga-source`
 - `examples/video-source`
 - `examples/novel-source`
@@ -36,7 +37,7 @@ for each media kind:
   "version": "1.0.0",
   "versionCode": 1,
   "minimumManatanVersion": "0.1.0",
-  "contentTypes": ["manga", "video", "novel"],
+  "contentType": "manga",
   "permissions": {
     "network": ["https://example.com"],
     "cookies": true,
@@ -49,7 +50,7 @@ for each media kind:
       "name": "Example",
       "lang": "en",
       "baseUrl": "https://example.com",
-      "contentTypes": ["manga", "video", "novel"],
+      "contentType": "manga",
       "capabilities": {
         "search": true,
         "latest": true,
@@ -59,8 +60,8 @@ for each media kind:
         "hosterResolution": true
       },
       "listings": [
-        { "id": "popular", "name": "Popular", "contentTypes": ["manga", "video", "novel"] },
-        { "id": "latest", "name": "Latest", "contentTypes": ["manga", "video", "novel"] }
+        { "id": "popular", "name": "Popular" },
+        { "id": "latest", "name": "Latest" }
       ]
     }
   ]

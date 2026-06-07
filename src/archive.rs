@@ -34,12 +34,10 @@ pub enum ArchiveError {
     InvalidPackageId(String),
     #[error("invalid source id {0:?}")]
     InvalidSourceId(String),
-    #[error("manifest must declare at least one content type")]
-    MissingContentTypes,
     #[error("manifest must declare at least one source")]
     MissingSources,
-    #[error("source {0:?} must declare at least one content type")]
-    SourceMissingContentTypes(String),
+    #[error("source {0:?} content type must match package content type")]
+    SourceContentTypeMismatch(String),
 }
 
 pub fn parse_archive(bytes: &[u8]) -> Result<ExtensionArchive, ArchiveError> {
@@ -66,24 +64,24 @@ pub fn validate_manifest(manifest: &ExtensionManifest) -> Result<(), ArchiveErro
     if !is_valid_id(&manifest.package_id) {
         return Err(ArchiveError::InvalidPackageId(manifest.package_id.clone()));
     }
-    if manifest.content_types.is_empty() {
-        return Err(ArchiveError::MissingContentTypes);
-    }
     if manifest.sources.is_empty() {
         return Err(ArchiveError::MissingSources);
     }
     for source in &manifest.sources {
-        validate_source(source)?;
+        validate_source(manifest, source)?;
     }
     Ok(())
 }
 
-fn validate_source(source: &SourceManifest) -> Result<(), ArchiveError> {
+fn validate_source(
+    manifest: &ExtensionManifest,
+    source: &SourceManifest,
+) -> Result<(), ArchiveError> {
     if !is_valid_id(&source.id) {
         return Err(ArchiveError::InvalidSourceId(source.id.clone()));
     }
-    if source.content_types.is_empty() {
-        return Err(ArchiveError::SourceMissingContentTypes(source.id.clone()));
+    if source.content_type != manifest.content_type {
+        return Err(ArchiveError::SourceContentTypeMismatch(source.id.clone()));
     }
     Ok(())
 }
@@ -135,23 +133,46 @@ mod tests {
     fn parses_valid_package() {
         let manifest = r#"{
             "schemaVersion": 1,
-            "packageId": "com.example.multi",
+            "packageId": "com.example.manga",
             "name": "Example",
             "version": "1.0.0",
             "versionCode": 1,
-            "contentTypes": ["manga", "video", "novel"],
+            "contentType": "manga",
             "sources": [{
                 "id": "example",
                 "name": "Example",
                 "lang": "en",
-                "contentTypes": ["manga"],
+                "contentType": "manga",
                 "capabilities": { "search": true }
             }]
         }"#;
         let bytes = package_bytes(manifest, b"\0asm");
         let archive = parse_archive(&bytes).expect("valid package");
-        assert_eq!(archive.manifest.package_id, "com.example.multi");
+        assert_eq!(archive.manifest.package_id, "com.example.manga");
         assert_eq!(archive.module, b"\0asm");
+    }
+
+    #[test]
+    fn rejects_source_content_type_mismatch() {
+        let manifest = r#"{
+            "schemaVersion": 1,
+            "packageId": "com.example.mismatch",
+            "name": "Example",
+            "version": "1.0.0",
+            "versionCode": 1,
+            "contentType": "manga",
+            "sources": [{
+                "id": "example",
+                "name": "Example",
+                "lang": "en",
+                "contentType": "video"
+            }]
+        }"#;
+        let bytes = package_bytes(manifest, b"\0asm");
+        assert!(matches!(
+            parse_archive(&bytes),
+            Err(ArchiveError::SourceContentTypeMismatch(_))
+        ));
     }
 
     #[test]
@@ -162,12 +183,12 @@ mod tests {
             "name": "Example",
             "version": "1.0.0",
             "versionCode": 1,
-            "contentTypes": ["manga"],
+            "contentType": "manga",
             "sources": [{
                 "id": "example",
                 "name": "Example",
                 "lang": "en",
-                "contentTypes": ["manga"]
+                "contentType": "manga"
             }]
         }"#;
         let bytes = package_bytes(manifest, b"\0asm");
