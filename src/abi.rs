@@ -36,6 +36,13 @@ pub struct HttpResponse {
     pub text: Option<String>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SystemTimeResponse {
+    pub unix_millis: i64,
+    pub unix_seconds: i64,
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StorageRequest {
@@ -97,6 +104,8 @@ pub struct WebViewRequest {
     #[serde(default)]
     pub wait_for: Option<WebViewWait>,
     #[serde(default)]
+    pub wait_until: Option<WebViewWaitUntil>,
+    #[serde(default)]
     pub user_agent: Option<String>,
     #[serde(default)]
     pub headers: Vec<(String, String)>,
@@ -106,6 +115,47 @@ pub struct WebViewRequest {
     pub scripts: Vec<WebViewScript>,
     #[serde(default)]
     pub return_html: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WebViewExtractRequest {
+    pub url: String,
+    #[serde(default)]
+    pub headers: Vec<(String, String)>,
+    #[serde(default)]
+    pub user_agent: Option<String>,
+    #[serde(default)]
+    pub wait_until: Option<WebViewWaitUntil>,
+    #[serde(default)]
+    pub wait_for_script: Option<String>,
+    #[serde(default)]
+    pub wait_for_selector: Option<String>,
+    #[serde(default)]
+    pub wait_for_event: Option<String>,
+    pub script: String,
+    #[serde(default)]
+    pub timeout_ms: Option<u64>,
+    #[serde(default)]
+    pub cookies: bool,
+    #[serde(default)]
+    pub headless: Option<bool>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WebViewExtractResponse {
+    pub final_url: String,
+    #[serde(default)]
+    pub value: Option<Value>,
+    #[serde(default)]
+    pub text: Option<String>,
+    #[serde(default)]
+    pub json: Option<Value>,
+    #[serde(default)]
+    pub html: Option<String>,
+    #[serde(default)]
+    pub cookies: Vec<CookieRecord>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -128,6 +178,7 @@ pub enum WebViewWait {
     UrlContains { value: String },
     Script { script: String },
     Delay { milliseconds: u64 },
+    Event { name: String },
 }
 
 impl Default for WebViewWait {
@@ -167,6 +218,21 @@ pub struct WebViewScriptResult {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub enum WebViewWaitUntil {
+    LoadStarted,
+    LoadFinished,
+    DomReady,
+    NetworkIdle,
+}
+
+impl Default for WebViewWaitUntil {
+    fn default() -> Self {
+        Self::LoadFinished
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ExtensionError {
     pub message: String,
 }
@@ -201,6 +267,10 @@ where
 
 pub fn http_fetch(request: &HttpRequest) -> ExtensionResult<HttpResponse> {
     host_call_json("http.fetch", request)
+}
+
+pub fn system_time() -> ExtensionResult<SystemTimeResponse> {
+    host_call_json("system.time", &())
 }
 
 pub fn storage_get(
@@ -275,6 +345,10 @@ pub fn cookies_set(cookies: Vec<CookieRecord>) -> ExtensionResult<()> {
 
 pub fn webview_open(request: &WebViewRequest) -> ExtensionResult<WebViewResponse> {
     host_call_json("webview.open", request)
+}
+
+pub fn webview_extract(request: &WebViewExtractRequest) -> ExtensionResult<WebViewExtractResponse> {
+    host_call_json("webview.extract", request)
 }
 
 #[unsafe(no_mangle)]

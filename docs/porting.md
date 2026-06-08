@@ -1,7 +1,7 @@
 # Porting Sources to Manatan Extensions
 
-Manatan extensions are Rust/WASM packages. A port usually maps one old source
-class or plugin file to one Rust source module.
+Manatan extensions are Rust/WASM packages. A port usually maps one existing
+source implementation to one Rust source module.
 
 ## Common Mapping
 
@@ -40,6 +40,8 @@ Use SDK host helpers for behavior that source plugins often need:
 - Per-source cache or auth storage: `storage_get`, `storage_set`,
   `storage_delete`, and `storage_list`
 - Browser challenge or login pages: `webview_open`
+- Site JavaScript state extraction: `webview::extract`, `webview::extract_text`,
+  and `webview::extract_json`
 
 For manga sources, preserve viewer direction, update strategy, canonical item
 URLs, chapter URLs, scanlator/language data, page referers, image headers,
@@ -56,6 +58,12 @@ internal source data, and proxy/header requirements. Use the hoster-first export
 when the original source separates hoster extraction from stream resolution. For
 novels, preserve text base URLs, image headers, chapter navigation, and any CSS
 needed to render source content cleanly.
+
+Some sites populate listings from JavaScript objects after the browser app
+loads. Use `webview::extract` for those cases instead of trying to emulate the
+site runtime with string rewriting. A typical source loads the page, waits for a
+truthy JavaScript condition such as `typeof siteHistory !== 'undefined'`, and
+returns a string or JSON payload from a promise-returning script.
 
 ## Build Example
 

@@ -11,6 +11,7 @@ pub mod manifest;
 pub mod runner;
 pub mod source;
 pub mod types;
+pub mod webview;
 
 #[cfg(feature = "archive")]
 pub use archive::{ArchiveError, ExtensionArchive, parse_archive};

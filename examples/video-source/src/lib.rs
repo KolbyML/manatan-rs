@@ -10,13 +10,27 @@ const SOURCE: Source = Source;
 struct Source;
 
 impl VideoSource for Source {
-    fn list(&self, request: Value) -> ExtensionResult<Paged<CatalogItem>> { video_get_list(request) }
-    fn search(&self, request: Value) -> ExtensionResult<Paged<CatalogItem>> { video_search(request) }
-    fn details(&self, request: Value) -> ExtensionResult<CatalogItem> { video_get_details(request) }
-    fn episodes(&self, request: Value) -> ExtensionResult<Vec<VideoEpisode>> { video_get_episodes(request) }
-    fn streams(&self, request: Value) -> ExtensionResult<Vec<VideoStream>> { video_get_streams(request) }
-    fn hosters(&self, request: Value) -> ExtensionResult<Vec<VideoHoster>> { video_get_hosters(request) }
-    fn resolve_hoster(&self, request: Value) -> ExtensionResult<Vec<VideoStream>> { video_resolve_hoster(request) }
+    fn list(&self, request: Value) -> ExtensionResult<Paged<CatalogItem>> {
+        video_get_list(request)
+    }
+    fn search(&self, request: Value) -> ExtensionResult<Paged<CatalogItem>> {
+        video_search(request)
+    }
+    fn details(&self, request: Value) -> ExtensionResult<CatalogItem> {
+        video_get_details(request)
+    }
+    fn episodes(&self, request: Value) -> ExtensionResult<Vec<VideoEpisode>> {
+        video_get_episodes(request)
+    }
+    fn streams(&self, request: Value) -> ExtensionResult<Vec<VideoStream>> {
+        video_get_streams(request)
+    }
+    fn hosters(&self, request: Value) -> ExtensionResult<Vec<VideoHoster>> {
+        video_get_hosters(request)
+    }
+    fn resolve_hoster(&self, request: Value) -> ExtensionResult<Vec<VideoStream>> {
+        video_resolve_hoster(request)
+    }
 }
 
 fn demo_show(key: &str, title: &str) -> CatalogItem {

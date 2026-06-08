@@ -1,7 +1,7 @@
 use manatan_extension::{
     AlternateCover, CatalogItem, HomeSection, HomeSectionStyle, ItemStatus, MangaChapter,
     MangaPage, MangaPageImage, PageContent, Paged, Viewer, abi::ExtensionResult,
-    export_manga_source, source::MangaSource,
+    export_manga_source, source::MangaSource, webview,
 };
 use serde_json::{Value, json};
 
@@ -10,15 +10,33 @@ const SOURCE: Source = Source;
 struct Source;
 
 impl MangaSource for Source {
-    fn list(&self, request: Value) -> ExtensionResult<Paged<CatalogItem>> { manga_get_list(request) }
-    fn search(&self, request: Value) -> ExtensionResult<Paged<CatalogItem>> { manga_search(request) }
-    fn details(&self, request: Value) -> ExtensionResult<CatalogItem> { manga_get_details(request) }
-    fn chapters(&self, request: Value) -> ExtensionResult<Vec<MangaChapter>> { manga_get_chapters(request) }
-    fn pages(&self, request: Value) -> ExtensionResult<Vec<MangaPage>> { manga_get_pages(request) }
-    fn home(&self, request: Value) -> ExtensionResult<Vec<HomeSection<CatalogItem>>> { manga_get_home(request) }
-    fn resolve_page_image(&self, request: Value) -> ExtensionResult<MangaPageImage> { manga_resolve_page_image(request) }
-    fn alternate_covers(&self, request: Value) -> ExtensionResult<Vec<AlternateCover>> { manga_get_alternate_covers(request) }
-    fn related(&self, request: Value) -> ExtensionResult<Vec<CatalogItem>> { manga_get_related(request) }
+    fn list(&self, request: Value) -> ExtensionResult<Paged<CatalogItem>> {
+        manga_get_list(request)
+    }
+    fn search(&self, request: Value) -> ExtensionResult<Paged<CatalogItem>> {
+        manga_search(request)
+    }
+    fn details(&self, request: Value) -> ExtensionResult<CatalogItem> {
+        manga_get_details(request)
+    }
+    fn chapters(&self, request: Value) -> ExtensionResult<Vec<MangaChapter>> {
+        manga_get_chapters(request)
+    }
+    fn pages(&self, request: Value) -> ExtensionResult<Vec<MangaPage>> {
+        manga_get_pages(request)
+    }
+    fn home(&self, request: Value) -> ExtensionResult<Vec<HomeSection<CatalogItem>>> {
+        manga_get_home(request)
+    }
+    fn resolve_page_image(&self, request: Value) -> ExtensionResult<MangaPageImage> {
+        manga_resolve_page_image(request)
+    }
+    fn alternate_covers(&self, request: Value) -> ExtensionResult<Vec<AlternateCover>> {
+        manga_get_alternate_covers(request)
+    }
+    fn related(&self, request: Value) -> ExtensionResult<Vec<CatalogItem>> {
+        manga_get_related(request)
+    }
 }
 
 fn demo_manga(key: &str, title: &str) -> CatalogItem {
@@ -70,7 +88,10 @@ fn manga_page() -> Paged<CatalogItem> {
     }
 }
 
-fn manga_get_list(_request: Value) -> ExtensionResult<Paged<CatalogItem>> {
+fn manga_get_list(request: Value) -> ExtensionResult<Paged<CatalogItem>> {
+    if request.get("listing").and_then(Value::as_str) == Some("webview-demo") {
+        return webview_demo_listing();
+    }
     Ok(manga_page())
 }
 
@@ -183,7 +204,46 @@ fn manga_get_alternate_covers(_request: Value) -> ExtensionResult<Vec<AlternateC
 }
 
 fn manga_get_related(_request: Value) -> ExtensionResult<Vec<CatalogItem>> {
-    Ok(vec![demo_manga("iron-lantern-side-story", "Iron Lantern: Side Story")])
+    Ok(vec![demo_manga(
+        "iron-lantern-side-story",
+        "Iron Lantern: Side Story",
+    )])
+}
+
+fn webview_demo_listing() -> ExtensionResult<Paged<CatalogItem>> {
+    let payload = webview::extract_text(
+        webview::ExtractRequest::new(
+            "https://example.com/reader",
+            "Promise.resolve(JSON.stringify(window.__MANATAN_EXAMPLE_DATA__ || []))",
+        )
+        .wait_for_script("Array.isArray(window.__MANATAN_EXAMPLE_DATA__)")
+        .timeout_ms(10_000),
+    )?;
+    let entries = serde_json::from_str::<Vec<Value>>(&payload)
+        .unwrap_or_default()
+        .into_iter()
+        .take(20)
+        .enumerate()
+        .map(|(index, item)| {
+            let title = item
+                .get("title")
+                .or_else(|| item.get("name"))
+                .and_then(Value::as_str)
+                .unwrap_or("WebView Series");
+            let key = item
+                .get("slug")
+                .or_else(|| item.get("id"))
+                .or_else(|| item.get("url"))
+                .and_then(Value::as_str)
+                .map(ToString::to_string)
+                .unwrap_or_else(|| format!("webview-series-{index}"));
+            demo_manga(&key, title)
+        })
+        .collect();
+    Ok(Paged {
+        entries,
+        has_next_page: false,
+    })
 }
 
 export_manga_source!(SOURCE);

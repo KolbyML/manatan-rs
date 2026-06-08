@@ -159,10 +159,31 @@ Extensions can call Manatan host APIs through the SDK helpers:
 | `storage_get`, `storage_set`, `storage_delete`, `storage_list` | `storage.*` | `permissions.storage` |
 | `cookies_get`, `cookies_set` | `cookies.*` | `permissions.cookies` |
 | `webview_open` | `webview.open` | `permissions.webview` |
+| `webview::extract` | `webview.extract` | `permissions.webview`, plus `permissions.cookies` when cookie sharing is requested |
 
 Storage is per extension source. Cookie calls use Manatan's shared cookie jar.
-Webview calls use Manatan's platform webview bridge for challenge and login
-flows, returning the final URL and synced cookies after navigation completes.
+Webview calls use Manatan's platform webview bridge for challenge, login, and
+site JavaScript extraction flows. Use `webview::extract` when data only exists
+after the site has loaded its own JavaScript state:
+
+```rust
+let payload = manatan_extension::webview::extract_text(
+    manatan_extension::webview::ExtractRequest::new(
+        "https://example.com/reader",
+        r#"
+Promise.resolve(JSON.stringify(window.__MANATAN_EXAMPLE_DATA__ || []))
+"#,
+    )
+    .wait_for_script("Array.isArray(window.__MANATAN_EXAMPLE_DATA__)")
+    .timeout_ms(10_000)
+    .cookies(true),
+)?;
+```
+
+Extraction scripts can return plain strings, JSON-compatible values, or promises
+that resolve to either. The response includes the final URL, synced cookies, the
+raw value, a string payload when available, parsed JSON when the string contains
+JSON, and clear errors for navigation, timeout, and JavaScript failures.
 
 ## Media Metadata
 

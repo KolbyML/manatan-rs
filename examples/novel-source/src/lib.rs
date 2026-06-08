@@ -9,11 +9,21 @@ const SOURCE: Source = Source;
 struct Source;
 
 impl NovelSource for Source {
-    fn list(&self, request: Value) -> ExtensionResult<Paged<CatalogItem>> { novel_get_list(request) }
-    fn search(&self, request: Value) -> ExtensionResult<Paged<CatalogItem>> { novel_search(request) }
-    fn details(&self, request: Value) -> ExtensionResult<CatalogItem> { novel_get_details(request) }
-    fn chapters(&self, request: Value) -> ExtensionResult<Vec<NovelChapter>> { novel_get_chapters(request) }
-    fn text(&self, request: Value) -> ExtensionResult<NovelText> { novel_get_text(request) }
+    fn list(&self, request: Value) -> ExtensionResult<Paged<CatalogItem>> {
+        novel_get_list(request)
+    }
+    fn search(&self, request: Value) -> ExtensionResult<Paged<CatalogItem>> {
+        novel_search(request)
+    }
+    fn details(&self, request: Value) -> ExtensionResult<CatalogItem> {
+        novel_get_details(request)
+    }
+    fn chapters(&self, request: Value) -> ExtensionResult<Vec<NovelChapter>> {
+        novel_get_chapters(request)
+    }
+    fn text(&self, request: Value) -> ExtensionResult<NovelText> {
+        novel_get_text(request)
+    }
 }
 
 fn demo_novel(key: &str, title: &str) -> CatalogItem {

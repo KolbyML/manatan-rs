@@ -349,6 +349,7 @@ impl<'a> RequestBuilder<'a> {
         let webview = webview_open(&WebViewRequest {
             url: original.final_url.clone(),
             wait_for,
+            wait_until: None,
             user_agent: self.client.browser_user_agent(),
             headers: headers.into_iter().collect(),
             timeout_ms,

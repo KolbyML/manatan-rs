@@ -10,8 +10,8 @@
   "contentType": "manga",
   "permissions": {
     "network": ["https://example.com", "https://placehold.co"],
-    "cookies": false,
-    "webview": false,
+    "cookies": true,
+    "webview": true,
     "storage": false
   },
   "sources": [
@@ -32,7 +32,8 @@
       },
       "listings": [
         { "id": "popular", "name": "Popular" },
-        { "id": "latest", "name": "Latest" }
+        { "id": "latest", "name": "Latest" },
+        { "id": "webview-demo", "name": "WebView Demo" }
       ],
       "tags": ["example", "manga"]
     }
