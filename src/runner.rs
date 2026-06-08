@@ -50,11 +50,52 @@ pub trait HostCall: Send + Sync {
 pub struct EmptyHost;
 
 impl HostCall for EmptyHost {
-    fn call(&self, operation: &str, _payload: &[u8]) -> Result<Vec<u8>, RunnerError> {
-        Err(RunnerError::Host(format!(
-            "unsupported host operation {operation:?}"
-        )))
+    fn call(&self, operation: &str, payload: &[u8]) -> Result<Vec<u8>, RunnerError> {
+        match operation {
+            "cookies.get" => host_ok(serde_json::json!({
+                "header": null,
+                "cookies": []
+            })),
+            "cookies.set" => host_ok(serde_json::json!({
+                "header": null,
+                "cookies": []
+            })),
+            "storage.get" => host_ok(serde_json::json!({
+                "value": null,
+                "entries": []
+            })),
+            "storage.set" | "storage.delete" => host_ok(serde_json::json!({
+                "value": null,
+                "entries": []
+            })),
+            "storage.list" => host_ok(serde_json::json!({
+                "value": null,
+                "entries": []
+            })),
+            "system.time" => {
+                let unix_millis = current_unix_millis()?;
+                host_ok(serde_json::json!({
+                    "unixMillis": unix_millis,
+                    "unixSeconds": unix_millis / 1_000
+                }))
+            }
+            _ => Err(RunnerError::Host(format!(
+                "unsupported host operation {operation:?} with payload {} byte(s)",
+                payload.len()
+            ))),
+        }
     }
+}
+
+fn host_ok(value: Value) -> Result<Vec<u8>, RunnerError> {
+    serde_json::to_vec(&Ok::<Value, crate::abi::ExtensionError>(value)).map_err(RunnerError::from)
+}
+
+fn current_unix_millis() -> Result<i64, RunnerError> {
+    let duration = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|error| RunnerError::Host(format!("system time error: {error}")))?;
+    Ok(duration.as_millis() as i64)
 }
 
 #[derive(Clone)]
