@@ -703,6 +703,8 @@ pub struct MangaPageImageProcessRequest<
     #[serde(default)]
     pub mime_type: Option<String>,
     #[serde(default)]
+    pub image_headers: Context,
+    #[serde(default)]
     pub page_index: Option<u32>,
     #[serde(default)]
     pub source_id: Option<String>,
