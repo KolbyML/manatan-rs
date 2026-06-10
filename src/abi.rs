@@ -43,6 +43,18 @@ pub struct SystemTimeResponse {
     pub unix_seconds: i64,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SystemRandomRequest {
+    pub length: u32,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SystemRandomResponse {
+    pub bytes_base64: String,
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StorageRequest {
@@ -112,6 +124,8 @@ pub struct WebViewRequest {
     #[serde(default)]
     pub timeout_ms: Option<u64>,
     #[serde(default)]
+    pub preload_scripts: Vec<WebViewScript>,
+    #[serde(default)]
     pub scripts: Vec<WebViewScript>,
     #[serde(default)]
     pub return_html: bool,
@@ -141,7 +155,11 @@ pub struct WebViewExtractRequest {
     #[serde(default)]
     pub headless: Option<bool>,
     #[serde(default)]
+    pub preload_scripts: Vec<WebViewScript>,
+    #[serde(default)]
     pub capture_requests: Vec<WebViewRequestCapture>,
+    #[serde(default)]
+    pub capture_events: Vec<String>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -160,6 +178,8 @@ pub struct WebViewExtractResponse {
     pub cookies: Vec<CookieRecord>,
     #[serde(default)]
     pub captured_requests: Vec<WebViewCapturedRequest>,
+    #[serde(default)]
+    pub captured_events: Vec<WebViewCapturedEvent>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -196,6 +216,14 @@ pub struct WebViewCapturedRequest {
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct WebViewCapturedEvent {
+    pub name: String,
+    #[serde(default)]
+    pub value: Option<Value>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct WebViewResponse {
     pub final_url: String,
     #[serde(default)]
@@ -204,6 +232,8 @@ pub struct WebViewResponse {
     pub cookies: Vec<CookieRecord>,
     #[serde(default)]
     pub captured_requests: Vec<WebViewCapturedRequest>,
+    #[serde(default)]
+    pub captured_events: Vec<WebViewCapturedEvent>,
     #[serde(default)]
     pub script_results: Vec<WebViewScriptResult>,
 }
@@ -309,6 +339,10 @@ pub fn http_fetch(request: &HttpRequest) -> ExtensionResult<HttpResponse> {
 
 pub fn system_time() -> ExtensionResult<SystemTimeResponse> {
     host_call_json("system.time", &())
+}
+
+pub fn system_random_bytes(length: u32) -> ExtensionResult<SystemRandomResponse> {
+    host_call_json("system.randomBytes", &SystemRandomRequest { length })
 }
 
 pub fn storage_get(

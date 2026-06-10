@@ -353,6 +353,7 @@ impl<'a> RequestBuilder<'a> {
             user_agent: self.client.browser_user_agent(),
             headers: headers.into_iter().collect(),
             timeout_ms,
+            preload_scripts: Vec::new(),
             scripts: Vec::new(),
             return_html: true,
         })?;

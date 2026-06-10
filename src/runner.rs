@@ -79,6 +79,26 @@ impl HostCall for EmptyHost {
                     "unixSeconds": unix_millis / 1_000
                 }))
             }
+            "system.randomBytes" => {
+                let request: serde_json::Value = serde_json::from_slice(payload)?;
+                let length = request
+                    .get("length")
+                    .and_then(serde_json::Value::as_u64)
+                    .unwrap_or(0)
+                    .min(4096) as usize;
+                let mut state = current_unix_millis()? as u64;
+                let bytes = (0..length)
+                    .map(|_| {
+                        state ^= state << 13;
+                        state ^= state >> 7;
+                        state ^= state << 17;
+                        state as u8
+                    })
+                    .collect::<Vec<_>>();
+                host_ok(serde_json::json!({
+                    "bytesBase64": base64_encode(&bytes)
+                }))
+            }
             _ => Err(RunnerError::Host(format!(
                 "unsupported host operation {operation:?} with payload {} byte(s)",
                 payload.len()
@@ -89,6 +109,29 @@ impl HostCall for EmptyHost {
 
 fn host_ok(value: Value) -> Result<Vec<u8>, RunnerError> {
     serde_json::to_vec(&Ok::<Value, crate::abi::ExtensionError>(value)).map_err(RunnerError::from)
+}
+
+fn base64_encode(bytes: &[u8]) -> String {
+    const TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
+    for chunk in bytes.chunks(3) {
+        let b0 = chunk[0];
+        let b1 = *chunk.get(1).unwrap_or(&0);
+        let b2 = *chunk.get(2).unwrap_or(&0);
+        out.push(TABLE[(b0 >> 2) as usize] as char);
+        out.push(TABLE[(((b0 & 0x03) << 4) | (b1 >> 4)) as usize] as char);
+        out.push(if chunk.len() > 1 {
+            TABLE[(((b1 & 0x0f) << 2) | (b2 >> 6)) as usize] as char
+        } else {
+            '='
+        });
+        out.push(if chunk.len() > 2 {
+            TABLE[(b2 & 0x3f) as usize] as char
+        } else {
+            '='
+        });
+    }
+    out
 }
 
 fn current_unix_millis() -> Result<i64, RunnerError> {

@@ -6,7 +6,8 @@
 
 use crate::abi::{
     ExtensionError, ExtensionResult, WebViewExtractRequest, WebViewExtractResponse,
-    WebViewRequestCapture, WebViewWait, WebViewWaitUntil, webview_extract,
+    WebViewRequestCapture, WebViewScript, WebViewScriptRunAt, WebViewWait, WebViewWaitUntil,
+    webview_extract,
 };
 use serde::de::DeserializeOwned;
 use std::collections::BTreeMap;
@@ -26,7 +27,9 @@ pub struct ExtractRequest {
     pub timeout_ms: u64,
     pub cookies: bool,
     pub headless: Option<bool>,
+    pub preload_scripts: Vec<WebViewScript>,
     pub capture_requests: Vec<WebViewRequestCapture>,
+    pub capture_events: Vec<String>,
 }
 
 impl ExtractRequest {
@@ -43,7 +46,9 @@ impl ExtractRequest {
             timeout_ms: 30_000,
             cookies: true,
             headless: Some(true),
+            preload_scripts: Vec::new(),
             capture_requests: Vec::new(),
+            capture_events: Vec::new(),
         }
     }
 
@@ -102,6 +107,20 @@ impl ExtractRequest {
         self
     }
 
+    pub fn preload_script(mut self, id: impl Into<String>, script: impl Into<String>) -> Self {
+        self.preload_scripts.push(WebViewScript {
+            id: Some(id.into()),
+            script: script.into(),
+            run_at: Some(WebViewScriptRunAt::DocumentStart),
+        });
+        self
+    }
+
+    pub fn capture_event(mut self, event: impl Into<String>) -> Self {
+        self.capture_events.push(event.into());
+        self
+    }
+
     pub fn capture_url_contains(
         self,
         id: impl Into<String>,
@@ -127,7 +146,9 @@ impl ExtractRequest {
             timeout_ms: Some(self.timeout_ms),
             cookies: self.cookies,
             headless: self.headless,
+            preload_scripts: self.preload_scripts,
             capture_requests: self.capture_requests,
+            capture_events: self.capture_events,
         }
     }
 }
@@ -266,7 +287,9 @@ mod tests {
             timeout_ms: Some(30_000),
             cookies: true,
             headless: Some(true),
+            preload_scripts: Vec::new(),
             capture_requests: Vec::new(),
+            capture_events: Vec::new(),
         }
     }
 }
