@@ -5,8 +5,8 @@
 //! cookies.
 
 use crate::abi::{
-    ExtensionError, ExtensionResult, WebViewExtractRequest, WebViewExtractResponse, WebViewWait,
-    WebViewWaitUntil, webview_extract,
+    ExtensionError, ExtensionResult, WebViewExtractRequest, WebViewExtractResponse,
+    WebViewRequestCapture, WebViewWait, WebViewWaitUntil, webview_extract,
 };
 use serde::de::DeserializeOwned;
 use std::collections::BTreeMap;
@@ -26,6 +26,7 @@ pub struct ExtractRequest {
     pub timeout_ms: u64,
     pub cookies: bool,
     pub headless: Option<bool>,
+    pub capture_requests: Vec<WebViewRequestCapture>,
 }
 
 impl ExtractRequest {
@@ -42,6 +43,7 @@ impl ExtractRequest {
             timeout_ms: 30_000,
             cookies: true,
             headless: Some(true),
+            capture_requests: Vec::new(),
         }
     }
 
@@ -95,6 +97,23 @@ impl ExtractRequest {
         self
     }
 
+    pub fn capture(mut self, capture: WebViewRequestCapture) -> Self {
+        self.capture_requests.push(capture);
+        self
+    }
+
+    pub fn capture_url_contains(
+        self,
+        id: impl Into<String>,
+        url_contains: impl Into<String>,
+    ) -> Self {
+        self.capture(WebViewRequestCapture {
+            id: Some(id.into()),
+            url_contains: Some(url_contains.into()),
+            ..WebViewRequestCapture::default()
+        })
+    }
+
     pub fn into_abi(self) -> WebViewExtractRequest {
         WebViewExtractRequest {
             url: self.url,
@@ -108,6 +127,7 @@ impl ExtractRequest {
             timeout_ms: Some(self.timeout_ms),
             cookies: self.cookies,
             headless: self.headless,
+            capture_requests: self.capture_requests,
         }
     }
 }
@@ -246,6 +266,7 @@ mod tests {
             timeout_ms: Some(30_000),
             cookies: true,
             headless: Some(true),
+            capture_requests: Vec::new(),
         }
     }
 }

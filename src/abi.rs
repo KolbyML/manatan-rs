@@ -140,6 +140,8 @@ pub struct WebViewExtractRequest {
     pub cookies: bool,
     #[serde(default)]
     pub headless: Option<bool>,
+    #[serde(default)]
+    pub capture_requests: Vec<WebViewRequestCapture>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -156,6 +158,40 @@ pub struct WebViewExtractResponse {
     pub html: Option<String>,
     #[serde(default)]
     pub cookies: Vec<CookieRecord>,
+    #[serde(default)]
+    pub captured_requests: Vec<WebViewCapturedRequest>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WebViewRequestCapture {
+    #[serde(default)]
+    pub id: Option<String>,
+    #[serde(default)]
+    pub url_contains: Option<String>,
+    #[serde(default)]
+    pub method: Option<String>,
+    #[serde(default)]
+    pub main_frame: Option<bool>,
+    #[serde(default)]
+    pub limit: Option<u32>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WebViewCapturedRequest {
+    #[serde(default)]
+    pub capture_id: Option<String>,
+    pub url: String,
+    pub method: String,
+    #[serde(default)]
+    pub headers: Vec<(String, String)>,
+    #[serde(default)]
+    pub is_main_frame: bool,
+    #[serde(default)]
+    pub is_redirect: bool,
+    #[serde(default)]
+    pub frame_url: String,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -166,6 +202,8 @@ pub struct WebViewResponse {
     pub html: Option<String>,
     #[serde(default)]
     pub cookies: Vec<CookieRecord>,
+    #[serde(default)]
+    pub captured_requests: Vec<WebViewCapturedRequest>,
     #[serde(default)]
     pub script_results: Vec<WebViewScriptResult>,
 }
