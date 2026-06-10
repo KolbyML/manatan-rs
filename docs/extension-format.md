@@ -136,6 +136,9 @@ exports receive JSON request objects. The SDK exposes typed request structs:
 
 Every request can include `sourceId`, `preferences`, and `context`. Search
 requests include typed `FilterValue` entries from the source filter schema.
+`MangaPageImageProcessRequest` also includes the downloaded image bytes as
+`imageBase64`, the detected `mimeType`, and response `imageHeaders` so sources
+can process readers that encode metadata in image response headers.
 
 ## Filters And Preferences
 
