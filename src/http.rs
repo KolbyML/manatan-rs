@@ -317,6 +317,18 @@ impl<'a> RequestBuilder<'a> {
             .challenge_policy
             .clone()
             .unwrap_or_else(|| self.client.challenge_policy.clone());
+        if self.should_use_webview_document(&policy) {
+            return self.resolve_challenge(
+                policy,
+                HttpResponse {
+                    status: 200,
+                    headers: Vec::new(),
+                    final_url: self.url.clone(),
+                    body_base64: None,
+                    text: None,
+                },
+            );
+        }
         let request = self.build_request()?;
         let response = http_fetch(&request)?;
         if !is_challenge_response(&response) || matches!(policy, ChallengePolicy::Never) {
@@ -420,6 +432,16 @@ impl<'a> RequestBuilder<'a> {
             (name.eq_ignore_ascii_case("Sec-Fetch-Dest") && value.eq_ignore_ascii_case("document"))
                 || (name.eq_ignore_ascii_case("Accept") && value.contains("text/html"))
         })
+    }
+
+    fn should_use_webview_document(&self, policy: &ChallengePolicy) -> bool {
+        matches!(
+            policy,
+            ChallengePolicy::WebView {
+                wait_for: Some(_),
+                ..
+            }
+        ) && self.prefers_webview_html()
     }
 }
 
@@ -573,6 +595,9 @@ mod tests {
             .get("https://example.com/chapter")
             .browser_document()
             .webview_wait_for_script("document.images.length > 0");
+        assert!(
+            request.should_use_webview_document(request.challenge_policy.as_ref().expect("policy"))
+        );
         assert_eq!(
             request.challenge_policy,
             Some(ChallengePolicy::WebView {
