@@ -52,6 +52,14 @@ pub struct ExtensionManifest {
     pub content_type: ContentType,
     #[serde(default)]
     pub permissions: Permissions,
+    #[serde(default, skip_serializing)]
+    pub network: Vec<String>,
+    #[serde(default, skip_serializing)]
+    pub webview: bool,
+    #[serde(default, skip_serializing)]
+    pub cookies: bool,
+    #[serde(default, skip_serializing)]
+    pub storage: bool,
     #[serde(default)]
     pub sources: Vec<SourceManifest>,
 }

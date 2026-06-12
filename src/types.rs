@@ -210,6 +210,22 @@ pub struct VideoEpisode {
     pub extra: JsonMap,
 }
 
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VideoPlayerArg {
+    pub name: String,
+    pub value: String,
+}
+
+impl VideoPlayerArg {
+    pub fn new(name: impl Into<String>, value: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            value: value.into(),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VideoStream {
@@ -257,11 +273,11 @@ pub struct VideoStream {
     #[serde(default)]
     pub timestamps: Vec<MediaTimestamp>,
     #[serde(default)]
-    pub mpv_args: Vec<String>,
+    pub mpv_args: Vec<VideoPlayerArg>,
     #[serde(default)]
-    pub ffmpeg_stream_args: Vec<String>,
+    pub ffmpeg_stream_args: Vec<VideoPlayerArg>,
     #[serde(default)]
-    pub ffmpeg_video_args: Vec<String>,
+    pub ffmpeg_video_args: Vec<VideoPlayerArg>,
     #[serde(default)]
     pub internal_data: Option<String>,
     #[serde(default)]
@@ -1168,5 +1184,24 @@ mod tests {
             novel_value["imageRequest"]["url"],
             "https://example.test/image.jpg"
         );
+
+        let stream = VideoStream {
+            url: "https://cdn.example.test/master.m3u8".to_string(),
+            is_hls: true,
+            headers: [("Referer".to_string(), "https://example.test/".to_string())].into(),
+            mpv_args: vec![VideoPlayerArg::new("profile", "fast")],
+            ffmpeg_stream_args: vec![VideoPlayerArg::new("user_agent", "Manatan")],
+            ffmpeg_video_args: vec![VideoPlayerArg::new(
+                "headers",
+                "Referer: https://example.test/",
+            )],
+            ..Default::default()
+        };
+        let stream_value = serde_json::to_value(stream).unwrap();
+        assert_eq!(stream_value["headers"]["Referer"], "https://example.test/");
+        assert_eq!(stream_value["mpvArgs"][0]["name"], "profile");
+        assert_eq!(stream_value["mpvArgs"][0]["value"], "fast");
+        assert_eq!(stream_value["ffmpegStreamArgs"][0]["name"], "user_agent");
+        assert_eq!(stream_value["ffmpegVideoArgs"][0]["name"], "headers");
     }
 }

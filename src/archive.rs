@@ -44,7 +44,8 @@ pub fn parse_archive(bytes: &[u8]) -> Result<ExtensionArchive, ArchiveError> {
     let mut zip = ZipArchive::new(Cursor::new(bytes))?;
     let manifest_bytes =
         read_zip_entry(&mut zip, MANIFEST_FILE)?.ok_or(ArchiveError::MissingManifest)?;
-    let manifest = serde_json::from_slice::<ExtensionManifest>(&manifest_bytes)?;
+    let mut manifest = serde_json::from_slice::<ExtensionManifest>(&manifest_bytes)?;
+    normalize_manifest_permissions(&mut manifest);
     validate_manifest(&manifest)?;
     let module = read_zip_entry(&mut zip, MODULE_FILE)?.ok_or(ArchiveError::MissingModule)?;
     let filters = read_json_entry(&mut zip, "filters.json")?;
@@ -55,6 +56,20 @@ pub fn parse_archive(bytes: &[u8]) -> Result<ExtensionArchive, ArchiveError> {
         filters,
         preferences,
     })
+}
+
+fn normalize_manifest_permissions(manifest: &mut ExtensionManifest) {
+    for network in std::mem::take(&mut manifest.network) {
+        if !manifest.permissions.network.contains(&network) {
+            manifest.permissions.network.push(network);
+        }
+    }
+    manifest.permissions.webview |= manifest.webview;
+    manifest.permissions.cookies |= manifest.cookies;
+    manifest.permissions.storage |= manifest.storage;
+    manifest.webview = false;
+    manifest.cookies = false;
+    manifest.storage = false;
 }
 
 pub fn validate_manifest(manifest: &ExtensionManifest) -> Result<(), ArchiveError> {
@@ -173,6 +188,35 @@ mod tests {
             parse_archive(&bytes),
             Err(ArchiveError::SourceContentTypeMismatch(_))
         ));
+    }
+
+    #[test]
+    fn merges_legacy_top_level_permissions_into_permissions_object() {
+        let manifest = r#"{
+            "schemaVersion": 1,
+            "packageId": "example-video",
+            "name": "Example",
+            "version": "1.0.0",
+            "versionCode": 1,
+            "contentType": "video",
+            "network": ["https://example.com"],
+            "webview": true,
+            "cookies": true,
+            "sources": [{
+                "id": "example",
+                "name": "Example",
+                "lang": "en",
+                "contentType": "video"
+            }]
+        }"#;
+        let bytes = package_bytes(manifest, b"\0asm");
+        let archive = parse_archive(&bytes).expect("valid package");
+        assert_eq!(
+            archive.manifest.permissions.network,
+            ["https://example.com"]
+        );
+        assert!(archive.manifest.permissions.webview);
+        assert!(archive.manifest.permissions.cookies);
     }
 
     #[test]

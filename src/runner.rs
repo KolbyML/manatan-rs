@@ -588,6 +588,10 @@ mod tests {
             icon: None,
             content_type: ContentType::Manga,
             permissions: Default::default(),
+            network: Vec::new(),
+            webview: false,
+            cookies: false,
+            storage: false,
             sources: vec![SourceManifest {
                 id: "runner".to_string(),
                 name: "Runner".to_string(),
