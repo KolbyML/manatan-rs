@@ -482,6 +482,96 @@ mod tests {
         assert_eq!(value["entries"].as_array().map(Vec::len), Some(0));
     }
 
+    #[test]
+    fn detects_optional_sdk_exports() {
+        let module = wat::parse_str(
+            r#"
+            (module
+              (memory (export "memory") 1)
+              (global $heap (mut i32) (i32.const 4096))
+              (func (export "manatan_alloc") (param $len i32) (result i32)
+                (local $ptr i32)
+                (local.set $ptr (global.get $heap))
+                (global.set $heap (i32.add (global.get $heap) (local.get $len)))
+                (local.get $ptr))
+              (func (export "manatan_dealloc") (param i32) (param i32))
+              (data (i32.const 1024) "{\"Ok\":null}")
+              (func $empty (param i32) (param i32) (result i64)
+                (i64.or
+                  (i64.extend_i32_u (i32.const 1024))
+                  (i64.shl
+                    (i64.extend_i32_u (i32.const 11))
+                    (i64.const 32))))
+              (export "manatan_get_home" (func $empty))
+              (export "manatan_get_filters" (func $empty))
+              (export "manatan_get_preferences" (func $empty))
+              (export "manatan_manga_get_manga_url" (func $empty))
+              (export "manatan_manga_get_chapter_url" (func $empty))
+              (export "manatan_manga_handle_url" (func $empty))
+              (export "manatan_manga_prepare_chapter" (func $empty))
+              (export "manatan_manga_resolve_page_image" (func $empty))
+              (export "manatan_manga_process_page_image" (func $empty))
+              (export "manatan_manga_get_alternate_covers" (func $empty))
+              (export "manatan_manga_get_related" (func $empty))
+              (export "manatan_manga_migrate" (func $empty))
+              (export "manatan_video_get_hosters" (func $empty))
+              (export "manatan_video_resolve_hoster" (func $empty))
+              (export "manatan_video_get_home" (func $empty))
+              (export "manatan_video_get_item_url" (func $empty))
+              (export "manatan_video_get_episode_url" (func $empty))
+              (export "manatan_video_handle_url" (func $empty))
+              (export "manatan_novel_get_home" (func $empty))
+              (export "manatan_novel_get_chapters_page" (func $empty))
+              (export "manatan_novel_get_novel_url" (func $empty))
+              (export "manatan_novel_get_chapter_url" (func $empty))
+              (export "manatan_novel_handle_url" (func $empty)))
+            "#,
+        )
+        .expect("wat");
+        let runner = ExtensionRunner::new(ExtensionArchive {
+            manifest: manifest(),
+            module,
+            filters: None,
+            preferences: None,
+        });
+
+        for export_name in [
+            crate::exports::GET_HOME,
+            crate::exports::GET_FILTERS,
+            crate::exports::GET_PREFERENCES,
+            crate::exports::MANGA_GET_MANGA_URL,
+            crate::exports::MANGA_GET_CHAPTER_URL,
+            crate::exports::MANGA_HANDLE_URL,
+            crate::exports::MANGA_PREPARE_CHAPTER,
+            crate::exports::MANGA_RESOLVE_PAGE_IMAGE,
+            crate::exports::MANGA_PROCESS_PAGE_IMAGE,
+            crate::exports::MANGA_GET_ALTERNATE_COVERS,
+            crate::exports::MANGA_GET_RELATED,
+            crate::exports::MANGA_MIGRATE,
+            crate::exports::VIDEO_GET_HOSTERS,
+            crate::exports::VIDEO_RESOLVE_HOSTER,
+            crate::exports::VIDEO_GET_HOME,
+            crate::exports::VIDEO_GET_ITEM_URL,
+            crate::exports::VIDEO_GET_EPISODE_URL,
+            crate::exports::VIDEO_HANDLE_URL,
+            crate::exports::NOVEL_GET_HOME,
+            crate::exports::NOVEL_GET_CHAPTERS_PAGE,
+            crate::exports::NOVEL_GET_NOVEL_URL,
+            crate::exports::NOVEL_GET_CHAPTER_URL,
+            crate::exports::NOVEL_HANDLE_URL,
+        ] {
+            assert!(
+                runner.has_export(export_name).expect("has_export"),
+                "{export_name}"
+            );
+        }
+        assert!(
+            !runner
+                .has_export(crate::exports::MANGA_GET_HOME)
+                .expect("has_export")
+        );
+    }
+
     fn manifest() -> ExtensionManifest {
         ExtensionManifest {
             schema_version: CURRENT_SCHEMA_VERSION,

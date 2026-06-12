@@ -18,6 +18,8 @@ pub struct HttpRequest {
     pub method: String,
     pub url: String,
     #[serde(default)]
+    pub cookie_url: Option<String>,
+    #[serde(default)]
     pub headers: Vec<(String, String)>,
     #[serde(default)]
     pub body_base64: Option<String>,
@@ -114,6 +116,8 @@ pub struct CookieResponse {
 pub struct WebViewRequest {
     pub url: String,
     #[serde(default)]
+    pub cookie_url: Option<String>,
+    #[serde(default)]
     pub wait_for: Option<WebViewWait>,
     #[serde(default)]
     pub wait_until: Option<WebViewWaitUntil>,
@@ -135,6 +139,8 @@ pub struct WebViewRequest {
 #[serde(rename_all = "camelCase")]
 pub struct WebViewExtractRequest {
     pub url: String,
+    #[serde(default)]
+    pub cookie_url: Option<String>,
     #[serde(default)]
     pub headers: Vec<(String, String)>,
     #[serde(default)]

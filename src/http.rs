@@ -5,8 +5,8 @@
 //! challenge pages through the host webview when enabled.
 
 use crate::abi::{
-    ExtensionResult, HttpRequest, HttpResponse, WebViewRequest, WebViewWait, cookies_get,
-    cookies_set, http_fetch, webview_open,
+    ExtensionResult, HttpRequest, HttpResponse, WebViewRequest, WebViewWait, cookies_set,
+    http_fetch, webview_open,
 };
 use std::collections::BTreeMap;
 
@@ -306,25 +306,15 @@ impl<'a> RequestBuilder<'a> {
     fn build_request(&self) -> ExtensionResult<HttpRequest> {
         let mut headers = self.client.default_headers.clone();
         headers.extend(self.headers.clone());
-        let cookie_url = self.cookie_url.as_ref().or(self.client.cookie_url.as_ref());
-        if !headers.contains_key("Cookie") {
-            let Some(cookie_url) = cookie_url else {
-                return Ok(HttpRequest {
-                    method: self.method.clone(),
-                    url: self.url.clone(),
-                    headers: headers.into_iter().collect(),
-                    body_base64: self.body.as_deref().map(base64_encode),
-                });
-            };
-            if let Some(cookie_header) = cookies_get(cookie_url)?.header {
-                if !cookie_header.trim().is_empty() {
-                    headers.insert("Cookie".to_string(), cookie_header);
-                }
-            }
-        }
+        let cookie_url = self
+            .cookie_url
+            .as_ref()
+            .or(self.client.cookie_url.as_ref())
+            .cloned();
         Ok(HttpRequest {
             method: self.method.clone(),
             url: self.url.clone(),
+            cookie_url,
             headers: headers.into_iter().collect(),
             body_base64: self.body.as_deref().map(base64_encode),
         })
@@ -348,6 +338,11 @@ impl<'a> RequestBuilder<'a> {
         headers.remove("Cookie");
         let webview = webview_open(&WebViewRequest {
             url: original.final_url.clone(),
+            cookie_url: self
+                .cookie_url
+                .as_ref()
+                .or(self.client.cookie_url.as_ref())
+                .cloned(),
             wait_for,
             wait_until: None,
             user_agent: self.client.browser_user_agent(),
@@ -489,6 +484,24 @@ mod tests {
         assert_eq!(
             origin_from_url("https://example.com/path?q=1").as_deref(),
             Some("https://example.com")
+        );
+    }
+
+    #[test]
+    fn cookie_scope_is_host_owned_request_metadata() {
+        let request = HttpClient::browser()
+            .with_cookies_for("https://example.com")
+            .get("https://api.example.com/list")
+            .header("Accept", "application/json")
+            .build_request()
+            .unwrap();
+
+        assert_eq!(request.cookie_url.as_deref(), Some("https://example.com"));
+        assert!(
+            !request
+                .headers
+                .iter()
+                .any(|(name, _)| name.eq_ignore_ascii_case("cookie"))
         );
     }
 }

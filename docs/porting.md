@@ -36,7 +36,12 @@ source implementation to one Rust source module.
 Use SDK host helpers for behavior that source plugins often need:
 
 - HTTP requests: `http_fetch`
-- Login/session cookies: `cookies_get` and `cookies_set`
+- Browser-like HTTP requests: `HttpClient::browser()`
+- Cookie sharing: declare `permissions.cookies` and use
+  `HttpClient::with_cookies_for` or `RequestBuilder::cookies_for` when the
+  cookie scope differs from the request URL; Manatan resolves `cookieUrl` in the
+  host runtime instead of exposing cookies to WASM
+- Explicit login/session cookie management: `cookies_get` and `cookies_set`
 - Per-source cache or auth storage: `storage_get`, `storage_set`,
   `storage_delete`, and `storage_list`
 - Browser challenge or login pages: `webview_open`

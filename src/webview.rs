@@ -136,6 +136,7 @@ impl ExtractRequest {
     pub fn into_abi(self) -> WebViewExtractRequest {
         WebViewExtractRequest {
             url: self.url,
+            cookie_url: None,
             headers: self.headers.into_iter().collect(),
             user_agent: self.user_agent,
             wait_until: Some(self.wait_until),
@@ -277,6 +278,7 @@ mod tests {
     fn default_extract_request() -> WebViewExtractRequest {
         WebViewExtractRequest {
             url: String::new(),
+            cookie_url: None,
             headers: Vec::new(),
             user_agent: None,
             wait_until: Some(WebViewWaitUntil::LoadFinished),

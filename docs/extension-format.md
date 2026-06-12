@@ -164,10 +164,17 @@ Extensions can call Manatan host APIs through the SDK helpers:
 | `webview_open` | `webview.open` | `permissions.webview` |
 | `webview::extract` | `webview.extract` | `permissions.webview`, plus `permissions.cookies` when cookie sharing is requested |
 
-Storage is per extension source. Cookie calls use Manatan's shared cookie jar.
-Webview calls use Manatan's platform webview bridge for challenge, login, and
-site JavaScript extraction flows. Use `webview::extract` when data only exists
-after the site has loaded its own JavaScript state:
+Storage is per extension source. Network calls are host-owned: Manatan executes
+`http.fetch`, enforces `permissions.network`, attaches and stores shared cookies
+only when `permissions.cookies` is declared, and keeps redirect/challenge state
+inside the host runtime. `HttpClient::with_cookies_for` and
+`RequestBuilder::cookies_for` set structured `cookieUrl` metadata for the host;
+they do not read cookies inside WASM or inject raw `Cookie` headers.
+
+Cookie calls use Manatan's shared cookie jar and are intended for explicit login
+or preference flows. Webview calls use Manatan's platform webview bridge for
+challenge, login, and site JavaScript extraction flows. Use `webview::extract`
+when data only exists after the site has loaded its own JavaScript state:
 
 ```rust
 let payload = manatan_extension::webview::extract_text(
