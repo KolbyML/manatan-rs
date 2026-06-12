@@ -333,6 +333,7 @@ impl<'a> RequestBuilder<'a> {
             return Ok(original);
         };
 
+        let prefer_webview_html = self.prefers_webview_html();
         let mut headers = self.client.default_headers.clone();
         headers.extend(self.headers.clone());
         headers.remove("Cookie");
@@ -356,6 +357,19 @@ impl<'a> RequestBuilder<'a> {
             cookies_set(webview.cookies)?;
         }
 
+        if prefer_webview_html
+            && self.method.eq_ignore_ascii_case("GET")
+            && let Some(html) = webview.html.clone()
+        {
+            return Ok(HttpResponse {
+                status: 200,
+                headers: Vec::new(),
+                final_url: webview.final_url,
+                body_base64: None,
+                text: Some(html),
+            });
+        }
+
         let retry = http_fetch(&self.build_request()?)?;
         if !is_challenge_response(&retry) {
             return Ok(retry);
@@ -372,6 +386,18 @@ impl<'a> RequestBuilder<'a> {
             }
         }
         Ok(retry)
+    }
+
+    fn prefers_webview_html(&self) -> bool {
+        if !self.method.eq_ignore_ascii_case("GET") {
+            return false;
+        }
+        let mut headers = self.client.default_headers.clone();
+        headers.extend(self.headers.clone());
+        headers.iter().any(|(name, value)| {
+            (name.eq_ignore_ascii_case("Sec-Fetch-Dest") && value.eq_ignore_ascii_case("document"))
+                || (name.eq_ignore_ascii_case("Accept") && value.contains("text/html"))
+        })
     }
 }
 
@@ -503,5 +529,18 @@ mod tests {
                 .iter()
                 .any(|(name, _)| name.eq_ignore_ascii_case("cookie"))
         );
+    }
+
+    #[test]
+    fn browser_documents_prefer_webview_html_after_challenge() {
+        let document_client = HttpClient::browser();
+        let document = document_client
+            .get("https://example.com/chapter")
+            .browser_document();
+        assert!(document.prefers_webview_html());
+
+        let xhr_client = HttpClient::browser();
+        let xhr = xhr_client.get("https://example.com/api").xhr();
+        assert!(!xhr.prefers_webview_html());
     }
 }
