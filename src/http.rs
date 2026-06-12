@@ -477,12 +477,20 @@ pub fn is_challenge_response(response: &HttpResponse) -> bool {
 
 pub fn is_challenge_html(html: &str) -> bool {
     let lower = html.to_ascii_lowercase();
+    if lower.contains("challenge-platform")
+        && !lower.contains("just a moment")
+        && !lower.contains("cf-browser-verification")
+        && !lower.contains("cf-challenge")
+        && !lower.contains("checking your browser")
+    {
+        return false;
+    }
     [
         "just a moment",
         "cf-browser-verification",
         "cf-challenge",
         "cloudflare-static",
-        "challenge-platform",
+        "/cdn-cgi/challenge-platform",
         "ddos-guard",
         "ddos guard",
     ]
@@ -543,10 +551,13 @@ mod tests {
     fn detects_challenge_html() {
         assert!(is_challenge_html("<title>Just a moment...</title>"));
         assert!(is_challenge_html(
-            "<script src=\"/cdn-cgi/challenge-platform/x\"></script>"
+            "<title>Just a moment...</title><script src=\"/cdn-cgi/challenge-platform/x\"></script>"
         ));
         assert!(is_challenge_html("DDoS-Guard"));
         assert!(!is_challenge_html("<html><body>normal page</body></html>"));
+        assert!(!is_challenge_html(
+            r#"<html><body>normal page<script src="/cdn-cgi/challenge-platform/scripts/jsd/main.js"></script></body></html>"#
+        ));
     }
 
     #[test]
