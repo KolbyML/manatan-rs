@@ -281,6 +281,28 @@ impl<'a> RequestBuilder<'a> {
         self
     }
 
+    pub fn webview_wait(mut self, wait_for: WebViewWait) -> Self {
+        let policy = self
+            .challenge_policy
+            .take()
+            .unwrap_or_else(|| self.client.challenge_policy.clone())
+            .with_webview_wait(wait_for);
+        self.challenge_policy = Some(policy);
+        self
+    }
+
+    pub fn webview_wait_for_selector(self, selector: impl Into<String>) -> Self {
+        self.webview_wait(WebViewWait::Selector {
+            selector: selector.into(),
+        })
+    }
+
+    pub fn webview_wait_for_script(self, script: impl Into<String>) -> Self {
+        self.webview_wait(WebViewWait::Script {
+            script: script.into(),
+        })
+    }
+
     pub fn challenge_policy(mut self, policy: ChallengePolicy) -> Self {
         self.challenge_policy = Some(policy);
         self
@@ -542,5 +564,23 @@ mod tests {
         let xhr_client = HttpClient::browser();
         let xhr = xhr_client.get("https://example.com/api").xhr();
         assert!(!xhr.prefers_webview_html());
+    }
+
+    #[test]
+    fn request_builder_can_add_host_webview_wait() {
+        let client = HttpClient::browser();
+        let request = client
+            .get("https://example.com/chapter")
+            .browser_document()
+            .webview_wait_for_script("document.images.length > 0");
+        assert_eq!(
+            request.challenge_policy,
+            Some(ChallengePolicy::WebView {
+                wait_for: Some(WebViewWait::Script {
+                    script: "document.images.length > 0".to_string()
+                }),
+                timeout_ms: Some(45_000),
+            })
+        );
     }
 }
