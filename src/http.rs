@@ -388,7 +388,7 @@ impl<'a> RequestBuilder<'a> {
             return_html: true,
         })?;
         if !webview.cookies.is_empty() {
-            cookies_set(webview.cookies)?;
+            cookies_set(webview.final_url.clone(), webview.cookies)?;
         }
 
         if prefer_webview_html

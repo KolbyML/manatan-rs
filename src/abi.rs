@@ -416,8 +416,14 @@ pub fn cookies_get(url: impl Into<String>) -> ExtensionResult<CookieResponse> {
     )
 }
 
-pub fn cookies_set(cookies: Vec<CookieRecord>) -> ExtensionResult<()> {
-    let _: CookieResponse = host_call_json("cookies.set", &CookieRequest { url: None, cookies })?;
+pub fn cookies_set(url: impl Into<String>, cookies: Vec<CookieRecord>) -> ExtensionResult<()> {
+    let _: CookieResponse = host_call_json(
+        "cookies.set",
+        &CookieRequest {
+            url: Some(url.into()),
+            cookies,
+        },
+    )?;
     Ok(())
 }
 
